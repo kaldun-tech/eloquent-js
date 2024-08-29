@@ -1,2 +1,2 @@
 # js-playground
-Learning JS https://eloquentjavascript.ne
+Learning JS https://eloquentjavascript.net
