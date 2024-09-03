@@ -9,23 +9,55 @@ If no step is given, the elements should go up by increments of one, correspondi
 The function call range(1, 10, 2) should return [1, 3, 5, 7, 9].
 Make sure this also works with negative step values so that range(5, 2, -1) produces [5, 4, 3, 2].
 */
+function getRange(start, end, step = 1) {
+  let range = [];
+  for (i = start; i <= end; i += step) {
+    range.push(i);
+  }
+  return range;
+}
 
-console.log(range(1, 10));
+function getSum(numbers) {
+  let sum = 0;
+  for (let next of numbers) {
+    sum += next;
+  }
+  return sum;
+}
+console.log(getRange(1, 10));
 // → [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
-console.log(range(5, 2, -1));
+console.log(getRange(5, 2, -1));
 // → [5, 4, 3, 2]
-console.log(sum(range(1, 10)));
+console.log(getSum(getRange(1, 10)));
 // → 55
+console.log(getRange(1, 10, 2));
+// [1, 3, 5, 7, 9]
+console.log(getRange(5, 2, -1));
+// [5, 4, 3, 2]
 
 /*
 Arrays have a reverse method that changes the array by inverting the order in which its elements appear.
 For this exercise, write two functions, reverseArray and reverseArrayInPlace.
 The first, reverseArray, should take an array as its argument and produce a new array that has the same elements in the inverse order.
-The second, reverseArrayInPlace, should do what the reverse method does: modify the array given as its argument by reversing its elements. Neither may use the standard reverse method.
+The second, reverseArrayInPlace, should do what the reverse method does: modify the array given as its argument by reversing its elements.
+Neither may use the standard reverse method.
 
 Thinking back to the notes about side effects and pure functions in the previous chapter,
 which variant do you expect to be useful in more situations? Which one runs faster?
 */
+function reverseArray(array) {
+  let reversed = [];
+  for (let next of array) {
+    reversed.push(next);
+  }
+  return reversed;
+}
+
+function reverseArrayInPlace(array) {
+  for (let i = 0, j = array.length - i - 1; i < array.length / 2; ++i) {
+    [array[i], array[j]] = [array[j], array[i]];
+  }
+}
 
 let myArray = ["A", "B", "C"];
 console.log(reverseArray(myArray));
@@ -46,6 +78,30 @@ position in the list (with zero referring to the first element) or undefined whe
 
 If you haven’t already, also write a recursive version of nth.
 */
+function arrayToList(array) {
+  let list = null;
+  for (let ele of array) {
+    list = prepend(ele, list);
+  }
+}
+
+function prepend(ele, list) {
+  return {
+    value: ele,
+    rest: list,
+  };
+}
+
+function nth(list, n) {
+  let value = list?.value;
+  if (value == undefined) {
+    return undefined;
+  } else if (n == 0) {
+    return list.value;
+  } else {
+    return nth(list.rest, n - 1);
+  }
+}
 
 console.log(arrayToList([10, 20]));
 // → {value: 10, rest: {value: 20, rest: null}}
@@ -68,6 +124,32 @@ But you have to take one silly exception into account: because of a historical a
 
 The Object.keys function will be useful when you need to go over the properties of objects to compare them.
 */
+function deepEqual(a, b) {
+  if (a === b) {
+    return true;
+  } else if (
+    a != null &&
+    typeof a == "object" &&
+    b != null &&
+    typeof b == "object"
+  ) {
+    return objectsEqual(a, b);
+  }
+  return false;
+}
+function objectsEqual(a, b) {
+  let aKeys = a.keys();
+  let bKeys = b.keys();
+  if (aKeys.length == bKeys.length) {
+    for (i = 0; i < aKeys.length; ++i) {
+      if (aKeys[i] != bKeys[i]) {
+        return false;
+      }
+    }
+    return true;
+  }
+  return false;
+}
 
 let obj = { here: { is: "an" }, object: 2 };
 console.log(deepEqual(obj, obj));
