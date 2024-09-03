@@ -9,31 +9,33 @@ If no step is given, the elements should go up by increments of one, correspondi
 The function call range(1, 10, 2) should return [1, 3, 5, 7, 9].
 Make sure this also works with negative step values so that range(5, 2, -1) produces [5, 4, 3, 2].
 */
-function getRange(start, end, step = 1) {
-  let range = [];
-  for (i = start; i <= end; i += step) {
-    range.push(i);
+function range(start, end, step = 1) {
+  let arr = [];
+  for (
+    let i = start;
+    (step < 0 && end <= i) || (0 < step && i <= end);
+    i += step
+  ) {
+    arr.push(i);
   }
-  return range;
+  return arr;
 }
 
-function getSum(numbers) {
-  let sum = 0;
+function sum(numbers) {
+  let scalar = 0;
   for (let next of numbers) {
-    sum += next;
+    scalar += next;
   }
-  return sum;
+  return scalar;
 }
-console.log(getRange(1, 10));
+console.log(range(1, 10));
 // → [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
-console.log(getRange(5, 2, -1));
+console.log(range(5, 2, -1));
 // → [5, 4, 3, 2]
-console.log(getSum(getRange(1, 10)));
+console.log(sum(range(1, 10)));
 // → 55
-console.log(getRange(1, 10, 2));
+console.log(range(1, 10, 2));
 // [1, 3, 5, 7, 9]
-console.log(getRange(5, 2, -1));
-// [5, 4, 3, 2]
 
 /*
 Arrays have a reverse method that changes the array by inverting the order in which its elements appear.
@@ -48,22 +50,23 @@ which variant do you expect to be useful in more situations? Which one runs fast
 function reverseArray(array) {
   let reversed = [];
   for (let next of array) {
-    reversed.push(next);
+    reversed.unshift(next);
   }
   return reversed;
 }
 
 function reverseArrayInPlace(array) {
-  for (let i = 0, j = array.length - i - 1; i < array.length / 2; ++i) {
+  for (let i = 0; i < array.length / 2; ++i) {
+    let j = array.length - i - 1;
     [array[i], array[j]] = [array[j], array[i]];
   }
 }
 
 let myArray = ["A", "B", "C"];
-console.log(reverseArray(myArray));
-// → ["C", "B", "A"];
 console.log(myArray);
 // → ["A", "B", "C"];
+console.log(reverseArray(myArray));
+// → ["C", "B", "A"];
 let arrayValue = [1, 2, 3, 4, 5];
 reverseArrayInPlace(arrayValue);
 console.log(arrayValue);
@@ -83,6 +86,7 @@ function arrayToList(array) {
   for (let ele of array) {
     list = prepend(ele, list);
   }
+  return list;
 }
 
 function prepend(ele, list) {
@@ -90,6 +94,14 @@ function prepend(ele, list) {
     value: ele,
     rest: list,
   };
+}
+
+function listToArray(list) {
+  let arr = [];
+  for (let i = 0, n = nth(list, i); n != undefined; ++i) {
+    arr.push(n);
+  }
+  return arr;
 }
 
 function nth(list, n) {
@@ -138,11 +150,11 @@ function deepEqual(a, b) {
   return false;
 }
 function objectsEqual(a, b) {
-  let aKeys = a.keys();
-  let bKeys = b.keys();
+  let aKeys = Object.keys(a);
+  let bKeys = Object.keys(b);
   if (aKeys.length == bKeys.length) {
     for (i = 0; i < aKeys.length; ++i) {
-      if (aKeys[i] != bKeys[i]) {
+      if (!deepEqual(aKeys[i], bKeys[i])) {
         return false;
       }
     }
