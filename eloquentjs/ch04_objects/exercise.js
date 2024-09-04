@@ -81,10 +81,10 @@ position in the list (with zero referring to the first element) or undefined whe
 
 If you haven’t already, also write a recursive version of nth.
 */
-function arrayToList(array) {
+function arrayToList(arr) {
   let list = null;
-  for (let ele of array) {
-    list = prepend(ele, list);
+  for (let i = arr.length - 1; 0 <= i; --i) {
+    list = prepend(arr[i], list);
   }
   return list;
 }
@@ -98,7 +98,7 @@ function prepend(ele, list) {
 
 function listToArray(list) {
   let arr = [];
-  for (let i = 0, n = nth(list, i); n != undefined; ++i) {
+  for (let i = 0, n = 0; (n = nth(list, i)) != undefined; ++i) {
     arr.push(n);
   }
   return arr;
