@@ -154,7 +154,11 @@ function objectsEqual(a, b) {
   let bKeys = Object.keys(b);
   if (aKeys.length == bKeys.length) {
     for (i = 0; i < aKeys.length; ++i) {
-      if (!deepEqual(aKeys[i], bKeys[i])) {
+      let nextKey = aKeys[i];
+      if (
+        !deepEqual(aKeys[i], bKeys[i]) ||
+        !deepEqual(a[nextKey], b[nextKey])
+      ) {
         return false;
       }
     }
