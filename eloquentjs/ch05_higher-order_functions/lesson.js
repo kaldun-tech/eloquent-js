@@ -206,7 +206,7 @@ console.log(countBy([1, 2, 3, 4, 5], (n) => n > 2));
 /* Which scripts are used in a piece of text?
    Counts the characters by name using characterScript, falling back to "none"
    The filter call drops the entry for "none"
-   Comput epercentages using total number of characters per script with reduce, combines map with join
+   Compute percentages using total number of characters per script with reduce, combines map with join
  */
 function textScripts(text) {
   let scripts = countBy(text, (char) => {

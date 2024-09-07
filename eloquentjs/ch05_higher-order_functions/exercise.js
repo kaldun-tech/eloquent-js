@@ -51,8 +51,9 @@ function every_loop(array, test) {
   return true;
 }
 
+// Checks there are not any elements that fail the test
 function every_some(array, test) {
-  return array.some((val) => test(val));
+  return !array.some((val) => !test(val));
 }
 
 console.log(every([1, 3, 5], (n) => n < 10));
@@ -103,7 +104,30 @@ function scriptDirection(script) {
   return script ? script.direction : "none";
 }
 
-function dominantDirection(text) {}
+// Gets the dominant script for a text
+function dominantScript(text) {
+  // Creates a mapping of scripts to count for a text: { name, count }
+  let scripts = countBy(text, (char) => {
+    let script = characterScript(char.codePointAt(0));
+    return script ? script.name : "none";
+  }).filter(({ name }) => name != "none");
+
+  let dominantScript = "No scripts found";
+  let maxCount = 0;
+  for (let { name, count } of scripts) {
+    if (maxCount < count) {
+      dominantScript = name;
+      maxCount = count;
+    }
+  }
+  return dominantScript;
+}
+
+function dominantDirection(text) {
+  let dominantName = dominantScript(text);
+  let dominantScr = SCRIPTS.find((script) => script.name == dominant);
+  return scriptDirection(dominantScr);
+}
 
 console.log(dominantDirection("Hello!"));
 // → ltr
