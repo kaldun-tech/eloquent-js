@@ -59,21 +59,15 @@ class Group {
   }
 
   add(elem) {
-    if (this.has(elem)) {
-      console.log("Skip add existing: " + elem);
-    } else {
-      console.log("Add: " + elem);
+    if (!this.has(elem)) {
       this.values.push(elem);
     }
   }
 
   delete(elem) {
     if (this.has(elem)) {
-      console.log("Remove: " + elem);
       let index = this.values.indexOf(elem);
       this.values.splice(index, 1);
-    } else {
-      console.log("Skip remove missing: " + elem);
     }
   }
 
@@ -116,13 +110,17 @@ class GroupIterator {
     this.index = 0;
   }
 
+  get isDone() {
+    return this.group.values.length <= this.index;
+  }
+
   next() {
-    if (this.group == null || this.group.length <= this.index) {
+    if (this.group == null || this.isDone) {
       return { done: true };
     } else {
-      let value = this.group[this.index];
+      let value = this.group.values[this.index];
       ++this.index;
-      return value;
+      return { value, done: false };
     }
   }
 }
