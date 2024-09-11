@@ -285,7 +285,7 @@ class List {
 
   static fromArray(array) {
     let result = null;
-    for (let i = array.length - 1; i >= 0; i--) {
+    for (let i = array.length - 1; 0 <= i; --i) {
       result = new this(array[i], result);
     }
     return result;

@@ -8,7 +8,25 @@ a new vector that has the sum or difference of the two vectors’ (this and the 
 Add a getter property length to the prototype that computes the length of the vector—that is, the distance of the point (x, y) from the origin (0, 0).
 */
 
-// Your code here.
+class Vec {
+  constructor(x, y) {
+    this.x = x;
+    this.y = y;
+  }
+
+  plus(other) {
+    return new Vec(this.x + other.x, this.y + other.y);
+  }
+
+  minus(other) {
+    return new Vec(this.x - other.x, this.y - other.y);
+  }
+
+  // a*a + b*b = c*c
+  get length() {
+    return Math.sqrt(this.x ** 2 + this.y ** 2);
+  }
+}
 
 console.log(new Vec(1, 2).plus(new Vec(2, 3)));
 // → Vec{x: 3, y: 5}
@@ -30,12 +48,42 @@ delete removes its argument from the group (if it was a member),
 and has returns a Boolean value indicating whether its argument is a member of the group.
 
 Use the === operator, or something equivalent such as indexOf, to determine whether two values are the same.
-
-Give the class a static from method that takes an iterable object as its argument and creates a group that
-contains all the values produced by iterating over it.
 */
 class Group {
-  // Your code here.
+  constructor() {
+    this.values = [];
+  }
+
+  has(elem) {
+    return 0 <= this.values.indexOf(elem);
+  }
+
+  add(elem) {
+    if (this.has(elem)) {
+      console.log("Skip add existing: " + elem);
+    } else {
+      console.log("Add: " + elem);
+      this.values.push(elem);
+    }
+  }
+
+  delete(elem) {
+    if (this.has(elem)) {
+      console.log("Remove: " + elem);
+      let index = this.values.indexOf(elem);
+      this.values.splice(index, 1);
+    } else {
+      console.log("Skip remove missing: " + elem);
+    }
+  }
+
+  static from(iter) {
+    let g = new Group();
+    for (let elem of iter) {
+      g.add(elem);
+    }
+    return g;
+  }
 }
 
 let group = Group.from([10, 20]);
@@ -49,7 +97,10 @@ console.log(group.has(10));
 // → false
 
 /*
-Make the Group class from the previous exercise iterable. Refer to the section about the iterator interface earlier
+Give the class a static from method that takes an iterable object as its argument and creates a group that
+contains all the values produced by iterating over it.
+
+Make the Group class iterable. Refer to the section about the iterator interface earlier
 in the chapter if you aren’t clear on the exact form of the interface anymore.
 
 If you used an array to represent the group’s members, don’t just return the iterator created by calling the
@@ -57,7 +108,29 @@ Symbol.iterator method on the array. That would work, but it defeats the purpose
 
 It is okay if your iterator behaves strangely when the group is modified during iteration.
 */
-// Your code here (and the code from the previous exercise)
+
+// Iterator
+class GroupIterator {
+  constructor(group) {
+    this.group = group;
+    this.index = 0;
+  }
+
+  next() {
+    if (this.group == null || this.group.length <= this.index) {
+      return { done: true };
+    } else {
+      let value = this.group[this.index];
+      ++this.index;
+      return value;
+    }
+  }
+}
+
+// Set up iterable
+Group.prototype[Symbol.iterator] = function () {
+  return new GroupIterator(this);
+};
 
 for (let value of Group.from(["a", "b", "c"])) {
   console.log(value);
