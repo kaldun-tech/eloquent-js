@@ -221,7 +221,7 @@ compareRobots(routeRobot, [], goalOrientedRobot, []);
  * What obviously dumb things does it do? How could they be improved? */
 
 /* guidedFindRoute uses guided/heuristic BFS to improve efficiency
- * Keeps track of the set of visited nodes */
+ * Keeps track of the set of visited nodes in a set */
 function guidedFindRoute(graph, from, to, criteria) {
   let work = [{ at: from, route: [] }];
   let visited = new Set([from]);
@@ -240,7 +240,7 @@ function guidedFindRoute(graph, from, to, criteria) {
   }
 }
 
-// smartRobot uses guidedFindRoute to find the shortest route
+// smartRobot uses guidedFindRoute to find the shortest route and skips already visited nodes
 function smartRobot({ place, parcels }, route) {
   if (route.length == 0) {
     let parcel = parcels[0];
@@ -289,7 +289,7 @@ class PGroup {
     this.#values = values;
   }
 
-  // Public static method creates an empty PGroup
+  // Public static creates an empty PGroup
   static empty = new PGroup([]);
 
   has(elem) {
