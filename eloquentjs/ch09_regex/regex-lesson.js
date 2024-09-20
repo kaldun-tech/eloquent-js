@@ -43,7 +43,9 @@ console.log(nonBinary.test("0111010112101001"));
 \p{N}	Any numeric character
 \p{P}	Any punctuation character
 \P{L}	Any nonletter (uppercase P inverts)
-\p{Script=Hangul}	Any character from the given script (see Chapter 5) */
+\p{Script=Hangul}	Any character from the given script (see Chapter 5)
+/u      Allow unicode
+*/
 console.log(/\p{L}/u.test("α"));
 // → true
 console.log(/\p{L}/u.test("!"));
@@ -75,7 +77,7 @@ dateTime = /\d{1,2}-\d{1,2}-\d{4} \d{1,2}:\d{2}/;
 console.log(dateTime.test("1-30-2003 8:45"));
 // → true
 
-// Grouping subexpressions
+// Grouping subexpressions: /i for ignore case
 let cartoonCrying = /boo+(hoo+)+/i;
 console.log(cartoonCrying.test("Boohoooohoohooo"));
 // → true
@@ -150,13 +152,13 @@ console.log(animalCount.test("15 pugs"));
 console.log("papa".replace("p", "m"));
 // → mapa
 
-// With regex
+// With regex: /g for global gets all matches
 console.log("Borobudur".replace(/[ou]/, "a"));
 // → Barobudur
 console.log("Borobudur".replace(/[ou]/g, "a"));
 // → Barabadar
 
-// Swap firstname and lastname
+// Swap firstname and lastname using $1 and $2 to refer to positinso in pattern
 console.log(
   "Liskov, Barbara\nMcCarthy, John\nMilner, Robin".replace(
     /(\p{L}+), (\p{L}+)/gu,
@@ -194,7 +196,7 @@ console.log(stripComments("x = 10;// ten!"));
 console.log(stripComments("1 /* a */+/* b */ 1"));
 // → 1  1
 
-// Non-greedy: Consume one block comment and nothing wrong
+// Non-greedy: Consume one block comment and nothing else
 function stripComments(code) {
   return code.replace(/\/\/.*|\/\*[^]*?\*\//g, "");
 }

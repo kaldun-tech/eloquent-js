@@ -8,37 +8,35 @@ Similarly, regexp golf is the practice of writing as tiny a regular expression a
 For each of the following items, write a regular expression to test whether the given pattern occurs in a string.
 The regular expression should match only strings containing the pattern.
 When your expression works, see whether you can make it any smaller.
-
-car and cat
-pop and prop
-ferret, ferry, and ferrari
-Any word ending in ious
-A whitespace character followed by a period, comma, colon, or semicolon
-A word longer than six letters
-A word without the letter e (or E)
 */
 
-// Fill in the regular expressions
-verify(/ca(r|t)/, ["my car", "bad cats"], ["camper", "high art"]);
+// car and cat
+verify(/ca[rt]/, ["my car", "bad cats"], ["camper", "high art"]);
+// pop and prop
 verify(/pr?op/, ["pop culture", "mad props"], ["plop", "prrrop"]);
+// ferret, ferry, and ferrari
 verify(
   /ferr(et|y|ari)/,
   ["ferret", "ferry", "ferrari"],
   ["ferrum", "transfer A"]
 );
+// Any word ending in ious
 verify(
-  /\w*ious$/,
+  /ious($|\P{L})/u,
   ["how delicious", "spacious room"],
   ["ruinous", "consciousness"]
 );
-verify(/\s(\.|,|:|;)/, ["bad punctuation ."], ["escape the period"]);
+// A whitespace character followed by a period, comma, colon, or semicolon
+verify(/\s[.,:;]/, ["bad punctuation ."], ["escape the period"]);
+// A word longer than six letters
 verify(
-  /\w{6,}/,
+  /\p{L}{7}/u,
   ["Siebentausenddreihundertzweiundzwanzig"],
   ["no", "three small words"]
 );
+// A word without the letter e (or E)
 verify(
-  /[^eE]/,
+  /(^|\P{L})[^\P{L}e]+($|\P{L})/iu,
   ["red platypus", "wobbling nest"],
   ["earth bed", "bedrøvet abe", "BEET"]
 );
@@ -75,7 +73,7 @@ That is, .5 and 5. are valid JavaScript numbers, but a lone dot isn’t.
 */
 // Fill in this regular expression.
 //
-let number = /^[\-\+]?((\d+\.?\d*|\d*\.\d+)|(\d+[eE]\d+))$/;
+let number = /^([\-\+]?(\d+\.?\d*|\d*\.\d+)|(\d+\.?\d*[eE][\-\+]?\d+))$/;
 
 // Tests:
 for (let str of [
