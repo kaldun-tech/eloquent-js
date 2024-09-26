@@ -1,6 +1,5 @@
 // Callback after wait
 import * as fs from "fs";
-import * as fs from "fs";
 setTimeout(() => console.log("Tick"), 500);
 
 // Read file from storage. Not part of standard JS
