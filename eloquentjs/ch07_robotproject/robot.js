@@ -218,9 +218,8 @@ function compareRobots(robot1, memory1, robot2, memory2) {
 compareRobots(routeRobot, [], goalOrientedRobot, []);
 
 /* Robot efficiency: finish the task faster than goalOrientedRobot
- * What obviously dumb things does it do? How could they be improved? */
-
-/* guidedFindRoute uses guided/heuristic BFS to improve efficiency
+ * What obviously dumb things does it do? How could they be improved?
+ * guidedFindRoute uses guided/heuristic BFS to improve efficiency
  * Keeps track of the set of visited nodes in a set */
 function guidedFindRoute(graph, from, to, criteria) {
   let work = [{ at: from, route: [] }];
