@@ -32,7 +32,7 @@ function textFile(filename) {
 function updateTableForDateStr(table, dateStr, day) {
   date = new Date(parseInt(dateStr));
   if (date.getDay() == day) {
-    hour = date.getHour();
+    hour = date.getHours();
     ++table[hour];
   }
 }
@@ -46,9 +46,8 @@ async function buildTable(table, logfile, day) {
 }
 // Build table for all logfiles
 async function activityTable(day) {
-  let logFileList = await textFile("camera_logs.txt");
-  logFileList.then((logFileText) => {
-    let table = new Array(24).fill(0);
+  let table = new Array(24).fill(0);
+  return textFile("camera_logs.txt").then((logFileText) => {
     for (let logfile of logFileText.split(/\r?\n/)) {
       buildTable(table, logfile, day);
     }
@@ -65,16 +64,16 @@ activityTable(1).then((table) => console.log(activityGraph(table)));
  * If a file has a typo and reading it fails, how does the failure end up in the Promise object
  * that your function returns? */
 async function activityTable(day) {
-  return textFile("camera_logs.txt")
-    .then((files) => {
-      return Promise.all(files.split(/\r?\n/).map(textFile));
-    })
-    .then((logs) => {
-      let table = new Array(24).fill(0);
-      for (let logfile of logs) {
-        buildTable(table, logfile, day);
-      }
-    });
+  let table = new Array(24).fill(0);
+  return textFile("camera_logs.txt").then((logFileText) => {
+    return Promise.all(
+      logFileText.split(/\r?\n/).map(async (name) => {
+        return textFile(name).then(async (logfile) => {
+          buildTable(table, logfile, day);
+        });
+      })
+    );
+  });
 }
 
 activityTable(6).then((table) => console.log(activityGraph(table)));
@@ -86,22 +85,30 @@ activityTable(6).then((table) => console.log(activityGraph(table)));
  * Remember that after a promise has succeeded or failed it can't succeed or fail again. Further calls
  * to the function that resolve it are ignored. This simplifies the way you handle a promise failure. */
 function Promise_all(promises) {
-  async function resolve_promise(promise, resolve, reject) {
-    await promise()
-      .then(() => {
-        resolve();
-      })
-      .catch(() => {
-        reject();
-      });
-  }
-  async function* handle_promise(promises, resolve, reject) {
+  function fail_all(promises, reject) {
     for (let promise of promises) {
-      yield resolve_promise(promise, resolve, reject);
+      promise.reject(reject);
     }
   }
+  function resolve_promise(promise, resolve, results) {
+    resolve(promise);
+    results.push(promise);
+  }
   return new Promise((resolve, reject) => {
-    handle_promises(promises, resolve, reject);
+    let results = [];
+    let remaining = promises.length - 1;
+    for (let remaining = promises.length - 1; 0 < remaining; ) {
+      for (let promise of promises) {
+        promise.then((err, val) => {
+          if (err) {
+            fail_all(promises, reject);
+          } else if (!(promise in results)) {
+            resolve(promise);
+            --remaining;
+          }
+        });
+      }
+    }
   });
 }
 
