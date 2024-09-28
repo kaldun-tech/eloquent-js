@@ -63,20 +63,25 @@ activityTable(1).then((table) => console.log(activityGraph(table)));
  * which approach takes the least time to run?
  * If a file has a typo and reading it fails, how does the failure end up in the Promise object
  * that your function returns? */
-async function activityTable(day) {
+function activityTable(day) {
   let table = new Array(24).fill(0);
-  return textFile("camera_logs.txt").then((logFileText) => {
-    return Promise.all(
-      logFileText.split(/\r?\n/).map(async (name) => {
-        return textFile(name).then(async (logfile) => {
-          buildTable(table, logfile, day);
-        });
-      })
-    );
-  });
+  return textFile("camera_logs.txt")
+    .then((files) => {
+      return Promise.all(
+        files.split("\n").map(async (name) => {
+          return textFile(name).then((log) => {
+            for (let timestamp of log.split("\n")) {
+              let date = new Date(Number(timestamp));
+              if (date.getDay() == day) {
+                table[date.getHours()]++;
+              }
+            }
+          });
+        })
+      );
+    })
+    .then(() => table);
 }
-
-activityTable(6).then((table) => console.log(activityGraph(table)));
 
 /* As we saw, given an array of Promises, Promise.all returns a promise that waits for all the promises
  * in the array to finish. It then succeeds yielding an array of results. If a promise in the array fails
@@ -85,30 +90,19 @@ activityTable(6).then((table) => console.log(activityGraph(table)));
  * Remember that after a promise has succeeded or failed it can't succeed or fail again. Further calls
  * to the function that resolve it are ignored. This simplifies the way you handle a promise failure. */
 function Promise_all(promises) {
-  function fail_all(promises, reject) {
-    for (let promise of promises) {
-      promise.reject(reject);
-    }
-  }
-  function resolve_promise(promise, resolve, results) {
-    resolve(promise);
-    results.push(promise);
-  }
   return new Promise((resolve, reject) => {
     let results = [];
-    let remaining = promises.length - 1;
-    for (let remaining = promises.length - 1; 0 < remaining; ) {
-      for (let promise of promises) {
-        promise.then((err, val) => {
-          if (err) {
-            fail_all(promises, reject);
-          } else if (!(promise in results)) {
-            resolve(promise);
-            --remaining;
-          }
-        });
-      }
+    let pending = promises.length;
+    for (let i = 0; i < promises.length; i++) {
+      promises[i]
+        .then((result) => {
+          results[i] = result;
+          pending--;
+          if (pending == 0) resolve(results);
+        })
+        .catch(reject);
     }
+    if (promises.length == 0) resolve(results);
   });
 }
 
