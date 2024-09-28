@@ -28,30 +28,31 @@ function textFile(filename) {
   });
 }
 
+// Build table for entry and day
+function updateTableForDateStr(table, dateStr, day) {
+  date = new Date(parseInt(dateStr));
+  if (date.getDay() == day) {
+    hour = date.getHour();
+    ++table[hour];
+  }
+}
+// Build table for individual logfile
+async function buildTable(table, logfile, day) {
+  await textFile(logfile).then((text) => {
+    for (let dateStr of text.split(/\r?\n/)) {
+      updateTableForDateStr(table, dateStr, day);
+    }
+  });
+}
+// Build table for all logfiles
 async function activityTable(day) {
   let logFileList = await textFile("camera_logs.txt");
-  function updateTableForEntry(table, entry, day) {
-    date = new Date(entry);
-    if (date.getDay() == day) {
-      hour = date.getHour();
-      ++table[hour];
-    }
-  }
-  // Build table for individual textfile
-  async function buildTable(table, logfile, day) {
-    await textFile(logfile).then(() => {
-      for (let entry of text) {
-        updateTableForEntry(table, entry, day);
-      }
-    });
-  }
-  logFileList.then(() => {
+  logFileList.then((logFileText) => {
     let table = new Array(24).fill(0);
-    await Promise.all(
-        logfiles.map(async (filename) => {
-            buildTable(table, filename, day);
-        });
-    );
+    for (let logfile of logFileText.split(/\r?\n/)) {
+      buildTable(table, logfile, day);
+    }
+    return table;
   });
 }
 
@@ -63,13 +64,20 @@ activityTable(1).then((table) => console.log(activityGraph(table)));
  * which approach takes the least time to run?
  * If a file has a typo and reading it fails, how does the failure end up in the Promise object
  * that your function returns? */
-function activityTable(day) {
-    // Your code here
-  }
-  
-  activityTable(6)
-    .then(table => console.log(activityGraph(table)));
+async function activityTable(day) {
+  return textFile("camera_logs.txt")
+    .then((files) => {
+      return Promise.all(files.split(/\r?\n/).map(textFile));
+    })
+    .then((logs) => {
+      let table = new Array(24).fill(0);
+      for (let logfile of logs) {
+        buildTable(table, logfile, day);
+      }
+    });
+}
 
+activityTable(6).then((table) => console.log(activityGraph(table)));
 
 /* As we saw, given an array of Promises, Promise.all returns a promise that waits for all the promises
  * in the array to finish. It then succeeds yielding an array of results. If a promise in the array fails
@@ -78,41 +86,43 @@ function activityTable(day) {
  * Remember that after a promise has succeeded or failed it can't succeed or fail again. Further calls
  * to the function that resolve it are ignored. This simplifies the way you handle a promise failure. */
 function Promise_all(promises) {
-    async function resolve_promise(promise, resolve, reject) {
-        await promise().then(() => {
-            resolve();
-        }).catch(() => {
-            reject();
-        })
-    };
-    async function* handle_promise(promises, resolve, reject) {
-        for (let promise of promises) {
-            yield resolve_promise(promise, resolve, reject);
-        }
-    };
-    return new Promise((resolve, reject) => {
-      handle_promises(promises, resolve, reject);
-    });
+  async function resolve_promise(promise, resolve, reject) {
+    await promise()
+      .then(() => {
+        resolve();
+      })
+      .catch(() => {
+        reject();
+      });
   }
-  
-  // Test code.
-  Promise_all([]).then(array => {
-    console.log("This should be []:", array);
-  });
-  function soon(val) {
-    return new Promise(resolve => {
-      setTimeout(() => resolve(val), Math.random() * 500);
-    });
+  async function* handle_promise(promises, resolve, reject) {
+    for (let promise of promises) {
+      yield resolve_promise(promise, resolve, reject);
+    }
   }
-  Promise_all([soon(1), soon(2), soon(3)]).then(array => {
-    console.log("This should be [1, 2, 3]:", array);
+  return new Promise((resolve, reject) => {
+    handle_promises(promises, resolve, reject);
   });
-  Promise_all([soon(1), Promise.reject("X"), soon(3)])
-    .then(array => {
-      console.log("We should not get here");
-    })
-    .catch(error => {
-      if (error != "X") {
-        console.log("Unexpected failure:", error);
-      }
-    });
+}
+
+// Test code.
+Promise_all([]).then((array) => {
+  console.log("This should be []:", array);
+});
+function soon(val) {
+  return new Promise((resolve) => {
+    setTimeout(() => resolve(val), Math.random() * 500);
+  });
+}
+Promise_all([soon(1), soon(2), soon(3)]).then((array) => {
+  console.log("This should be [1, 2, 3]:", array);
+});
+Promise_all([soon(1), Promise.reject("X"), soon(3)])
+  .then((array) => {
+    console.log("We should not get here");
+  })
+  .catch((error) => {
+    if (error != "X") {
+      console.log("Unexpected failure:", error);
+    }
+  });
