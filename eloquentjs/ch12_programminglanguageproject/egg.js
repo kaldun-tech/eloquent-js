@@ -5,7 +5,7 @@ do(define(x, 10),
       print("small"))); */
 
 /* Represents >(x, 5)
-      {
+{
   type: "apply",
   operator: {type: "word", name: ">"},
   args: [
@@ -17,7 +17,7 @@ do(define(x, 10),
 /* Takes a string as an input. Returns an object containing the data strructure for the expression
  * at the start of the string along with the part of the string left after parsing. When parsing
  * subexpressions, this function is called again yielding the argument expression and remainder text.
- * This text may contain more arguments or be the closing parenthesis that neds the arguments list. */
+ * This text may contain more arguments or be the closing parenthesis that ends the arguments list. */
 function parseExpression(program) {
   program = skipSpace(program);
   let match, expr;
@@ -137,8 +137,7 @@ specialForms.while = (args, scope) => {
     evaluate(args[1], scope);
   }
 
-  // Since undefined does not exist in Egg, we return false,
-  // for lack of a meaningful result
+  // Since undefined does not exist in Egg, we return false for lack of a meaningful result
   return false;
 };
 
@@ -153,6 +152,7 @@ specialForms.do = (args, scope) => {
 
 // Create bindings and give them values with define. Returns the value assigned like = operator.
 specialForms.define = (args, scope) => {
+  // Expects two arguments with word in first position and value in second
   if (args.length != 2 || args[0].type != "word") {
     throw new SyntaxError("Incorrect use of define");
   }
@@ -227,7 +227,7 @@ specialForms.fun = (args, scope) => {
 };
 
 // Functions get their own local scope. The function produced by fun creates this local scope and adds the bindings.
-// Then evaluate the function body in thise scope and return the results.
+// Then evaluate the function body in this scope and return the results.
 run(`
     do(define(plusOne, fun(a, +(a, 1))),
        print(plusOne(10)))
@@ -253,11 +253,11 @@ application = expr '(' (expr (',' expr)*)? ')' */
 // Add support for arrays to Egg by adding three functions
 
 // Constructs an array containing the arguments
-topScope.array = "...";
+topScope.array = `do(define(array, fun(values, [...values])))`;
 // Length gets an array's length
-topScope.length = "...";
+topScope.length = "do(define(length, fun(array, array.length)))";
 // Element fetches the n-th element of an array
-topScope.element = "...";
+topScope.element = "do(define(element, fun(array, index, array[index])))";
 
 run(`
 do(define(sum, fun(array,
@@ -271,12 +271,20 @@ do(define(sum, fun(array,
 `);
 // → 6
 
-/* Closure: We have dfined fun to allow functions in Egg to reference
+/* Closure: We have defined fun to allow functions in Egg to reference
  * the surrounding scope. This allows function bodies that were visible
  * when the function was defined just like JS. Function f returns a
- * function that adds its argument to f's argument. Means that it needs
+ * function that adds its argument to f's argument. Meaning that it needs
  * access to the local scope inside f to be able to use it.
- * Explain which mechanism causes this inside of the fun definition. */
+ * Explain which mechanism causes this inside of the fun definition.
+ *
+ * The local scope is created as a deep copy of the current scope.
+ * This loads all bindings into the new scope and passes it to the
+ * new function while keeping the old scope unchanged. Special forms
+ * are also passed the local scope in which they are evaluated.
+ * The prototype of the local scope will be the scope in which
+ * the function is created. This makes it possible to access bindings
+ * in that scope fromt he function. Compiling closure would take more work. */
 run(`
     do(define(f, fun(a, fun(b, +(a, b)))),
        print(f(4)(5)))
@@ -287,9 +295,8 @@ run(`
  * to skip comments as if they are whitespace so all points where skipSpace is called
  * skips comments */
 function skipSpace(string) {
-  let first = string.search(/\S/);
-  if (first == -1) return "";
-  return string.slice(first);
+  // Define a regular expression that replaces whitespace or comments and all characters after them
+  return string.replace(/^(\s*|#.*)$/gm, "");
 }
 
 console.log(parse("# hello\nx"));
@@ -300,7 +307,7 @@ console.log(parse("a # one\n   # two\n()"));
 //    operator: {type: "word", name: "a"},
 //    args: []}
 
-/* Fixing scope: The onlyw ay to assign a binding a value is define. This construct
+/* Fixing scope: The only way to assign a binding a value is define. This construct
  * acts as a way to both define new bindings and update existing ones. This ambiguity
  * causes a problem. When you try to give a nonlocal binding a value, you will define
  * a local one with the same name.
@@ -309,7 +316,26 @@ console.log(parse("a # one\n   # two\n()"));
  * a ReferenceError. Consider the Object.getPrototypeOf() method. Remember you can
  * use Object.hasOwn to find out if a given object has a property. */
 specialForms.set = (args, scope) => {
-  // Your code here.
+  // Expects two arguments with word in first position and value in second
+  if (args.length != 2 || args[0].type != "word") {
+    throw new SyntaxError("Set requires two arguments: a word and value");
+  }
+  // Loop through one scope at a time using Object.getPrototypeof to go to the next outer scope
+  for (
+    let nextScope = scope;
+    nextScope;
+    nextScope = Object.getPrototypeOf(nextScope)
+  ) {
+    // Use Object.hasOwn to check if the binding is in scope
+    if (Object.hasOwn(nextScope, args[0])) {
+      // Set the binding to the result of evaluating the second argument and return that value
+      let value = evaluate(args[1], nextScope);
+      nextScope[args[0].name] = value;
+      return value;
+    }
+  }
+  // The binding is not in scope so throw a ReferenceError
+  throw new ReferenceError(`${args[0]} is not defined`);
 };
 
 run(`
