@@ -253,11 +253,11 @@ application = expr '(' (expr (',' expr)*)? ')' */
 // Add support for arrays to Egg by adding three functions
 
 // Constructs an array containing the arguments
-topScope.array = `do(define(array, fun(values, [...values])))`;
+topScope.array = (...values) => values;
 // Length gets an array's length
-topScope.length = "do(define(length, fun(array, array.length)))";
+topScope.length = (array) => array.length;
 // Element fetches the n-th element of an array
-topScope.element = "do(define(element, fun(array, index, array[index])))";
+topScope.element = (array, i) => array[i];
 
 run(`
 do(define(sum, fun(array,
@@ -296,7 +296,8 @@ run(`
  * skips comments */
 function skipSpace(string) {
   // Define a regular expression that replaces whitespace or comments and all characters after them
-  return string.replace(/^(\s*|#.*)$/gm, "");
+  let skippable = string.match(/^(\s|#.*)*/);
+  return string.slice(skippable[0].length);
 }
 
 console.log(parse("# hello\nx"));
@@ -315,27 +316,24 @@ console.log(parse("a # one\n   # two\n()"));
  * the binding in an outer scope if necessary. If the binding is not defined throw
  * a ReferenceError. Consider the Object.getPrototypeOf() method. Remember you can
  * use Object.hasOwn to find out if a given object has a property. */
-specialForms.set = (args, scope) => {
+specialForms.set = (args, env) => {
   // Expects two arguments with word in first position and value in second
   if (args.length != 2 || args[0].type != "word") {
     throw new SyntaxError("Set requires two arguments: a word and value");
   }
+  let varName = args[0].name;
+  let value = evaluate(args[1], scope);
   // Loop through one scope at a time using Object.getPrototypeof to go to the next outer scope
-  for (
-    let nextScope = scope;
-    nextScope;
-    nextScope = Object.getPrototypeOf(nextScope)
-  ) {
+  for (let scope = env; scope; scope = Object.getPrototypeOf(scope)) {
     // Use Object.hasOwn to check if the binding is in scope
-    if (Object.hasOwn(nextScope, args[0])) {
+    if (Object.hasOwn(scope, args[0])) {
       // Set the binding to the result of evaluating the second argument and return that value
-      let value = evaluate(args[1], nextScope);
-      nextScope[args[0].name] = value;
+      scope[varName] = value;
       return value;
     }
   }
   // The binding is not in scope so throw a ReferenceError
-  throw new ReferenceError(`${args[0]} is not defined`);
+  throw new ReferenceError(`Undefined binding: ${varName}`);
 };
 
 run(`
