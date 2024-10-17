@@ -39,8 +39,11 @@ function renderTable(data) {
     Object.keys(record).forEach((key) => {
       const td = document.createElement("td");
       const text = document.createTextNode(record[key]);
+      if (typeof record[key] === "number") {
+        text.style.textAlign = "right";
+      }
       td.appendChild(text);
-      row.appendChild(cell);
+      row.appendChild(td);
     });
   }
   function buildRecords(data, table) {
