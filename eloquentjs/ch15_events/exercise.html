@@ -13,25 +13,33 @@
     Once you have that working, add a feature where if you blow up the balloon past a certain size, it “explodes”.
     In this case, exploding means that it is replaced with an 💥 emoji, and the event handler is removed
     (so that you can’t inflate or deflate the explosion). */
-    const maxSize = 500;
-    function explode(baloonElement) {
-      baloonElement.innerHTML = "💥";
-      baloonElement.removeEventListener("keydown", resizeBalloon);
+    const maxSize = 70;
+    let size;
+    let p = document.querySelector("p");
+    function explode() {
+      p.textContent = "💥";
+      document.body.removeEventListener("keydown", handleArrow);
     }
-    function resizeBalloon(event) {
+    function setSize(newSize) {
+        size = newSize;
+        p.style.fontSize = size + "px";
+    }
+    setSize(20);
+    function handleArrow(event) {
         let balloon = document.getElementById("balloon");
-        let currentSize = parseFloat(balloon.style.fontSize);
         if (event.key == "ArrowUp") {
-            if (currentSize < maxSize) {
-                balloon.style.fontSize = `${currentSize + 10}px`;
+            if (size < maxSize) {
+                setSize(1.1 * size);
+                event.preventDefault();
             } else {
-                explode(balloon);
+                explode();
             }
         } else if (event.key == "ArrowDown") {
-            balloon.style.fontSize = `${currentSize - 10}px`;
+            setSize(0.9 * size);
+            event.preventDefault();
         }
     }
-    window.addEventListener("keydown", resizeBalloon);
+    window.addEventListener("keydown", handleArrow);
 </script>
 
 
@@ -60,15 +68,16 @@
     A simple solution to start with is to keep a fixed number of trail elements and cycle through them,
     moving the next one to the mouse’s current position every time a "mousemove" event occurs. */
     const maxTrail = 8;
+    let trailElements = [];
     let trailPosition = 0;
     function addTrail(mouseX, mouseY) {
-        let trailElements = Array.from(document.querySelectorAll(".trail"));
         let nextTrail;
         if (trailElements.length < maxTrail) {
             nextTrail = document.createElement("div");
-            trail.className = "trail";
-            trail.style.position = "absolute";
-            document.body.appendChild(trail);
+            nextTrail.className = "trail";
+            nextTrail.style.position = "absolute";
+            document.body.appendChild(nextTrail);
+            trailElements.push(nextTrail);
         } else {
             nextTrail = trailElements[trailPosition];
         }
@@ -102,35 +111,28 @@
     When that works, extend it to style the button for the currently selected tab differently
     so that it is obvious which tab is selected */
     function asTabs(node) {
-        function buildButtonList(node) {
-            let buttonList = [];
-            for (let child of node.children) {
-                let button = document.createElement("button");
-                button.textContent = child.getAttribute("data-tabname");
-                buttonList.push(button);
-            }
-            return buttonList;
-        }
-        function hideOtherChildren(node, selectedChild) {
-            node.children.forEach(child => {
-                if (child != selectedChild) {
-                    child.style.display = "none";
-                }
-            });
-        }
-        function styleCurrentlySelectedButton(button) {
-            button.style.fontWeight = "bold";
-            button.style.color = "red";
-        }
+        let tabs = Array.from(node.children).map(node => {
+            let button = document.createElement("button");
+            button.textContent = node.getAttribute("data-tabname");
+            let tab = {node, button};
+            button.addEventListener("click", () => selectTab(tab));
+            return tab;
+        });
 
-        let buttonList = buildButtonList(node);
-        for (let button of buttonList) {
-            button.addEventListener("click", () => {
-                hideOtherChildren(node, button);
-                styleCurrentlySelectedButton(button);
-            });
-            node.insertBefore(button, node.firstChild);
+        let tabList = document.createElement("div");
+        for (let {button} of tabs) {
+            tabList.appendChild(button);
         }
+        node.insertBefore(tabList, node.firstChild);
+
+        function selectTab(selectedTab) {
+            for (let tab of tabs) {
+                let selected = (tab == selectedTab);
+                tab.node.style.display = selected ? "" : "none";
+                tab.button.style.color = selected ? "red" : "";
+            }
+        }
+        selectTab(tabs[0]);
     }
     asTabs(document.querySelector("tab-panel"));
 </script>
