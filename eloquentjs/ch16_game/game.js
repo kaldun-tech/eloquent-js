@@ -325,13 +325,11 @@ function overlap(actor1, actor2) {
 }
 
 /* If actors overlap its collide method gets a chance to update
- * the state. Touching a lava actor sets the game status to lost.
- * Coins vanish on touch and set the status to won when they
- * are the last coin of the level. */
+ * the state. Touching a lava actor sets the game status to lost. */
 Lava.prototype.collide = function (state) {
   return new State(state.level, state.actors, "lost");
 };
-
+// Coins vanish on touch and set the status to won when they are the last coin of the level
 Coin.prototype.collide = function (state) {
   let filtered = state.actors.filter((a) => a != this);
   let status = state.status;

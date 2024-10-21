@@ -34,20 +34,55 @@ kept around even when no game is running. You could say they leak out of our sys
 a way to unregister its handlers, then change runLevel to register its handlers when it starts and unregister
 them again when it is finished. */
 
+/* Do not want keys to take effect once per keypress. The effect
+ * should stay active as long as they are held. Set up a key handler
+ * that stores the current state of the left right and up arrow keys. */
+function trackKeys(keys) {
+  let down = Object.create(null);
+  let removes = Object.create(null);
+  // Track looks at the event object's type propert to determine whether key state should be updated
+  function track(event) {
+    if (keys.includes(event.key)) {
+      down[event.key] = event.type == "keydown";
+      // Prevent the default action to stop scrolling in the page
+      event.preventDefault();
+    }
+  }
+  function removeTrack(event) {
+    if (keys.includes(event.key)) {
+      delete down[event.key];
+      window.removeEventListener("keydown", track);
+      window.removeEventListener("keyup", track);
+    }
+  }
+  // The same event handler is used for both event types
+  window.addEventListener("keydown", track);
+  window.addEventListener("keyup", track);
+  // Return an object that tracks the current position of these keys and their removeEventListener callback
+  return { down };
+}
+
 function runLevel(level, Display) {
   let display = new Display(document.body, level);
   let state = State.start(level);
   let ending = 1;
-  function pauseUnpauseGame(state) {
-    if (state.status == "playing") state.status = "paused";
-    else if (state.status == "paused") state.status = "playing";
+  // Set up tracking for left, right, and up
+  const arrowKeys = trackKeys(["ArrowLeft", "ArrowRight", "ArrowUp"]);
+  function removeArrowKeys() {
+    for (let key in arrowKeys) {
+    }
+  }
+  // Tracking for escape pause/unpause
+  let isPaused = false;
+  function togglePause() {
+    isPaused = !isPaused;
   }
   window.addEventListener("keydown", (event) => {
-    if (event.key == "Escape") pauseUnpauseGame(state);
+    if (event.key == "Escape") togglePause(state);
   });
   return new Promise((resolve) => {
     runAnimation((time) => {
-      if (state.status == "paused") return true;
+      if (isPaused) return false;
       state = state.update(time, arrowKeys);
       display.syncState(state);
       if (state.status == "playing") {
@@ -75,19 +110,55 @@ When a monster touches the player, the effect depends on whether the player is j
 You can approximate this by checking whether the player’s bottom is near the monster’s top. If this is the case,
 the monster disappears. If not, the game is lost. Complete the constructor, update, and collide methods.*/
 class Monster {
-  constructor(pos /* ... */) {}
+  constructor(pos, speed, reset) {
+    this.pos = pos;
+    this.speed = speed;
+    this.reset = reset;
+    this.alive = true;
+  }
 
   get type() {
     return "monster";
   }
 
   static create(pos) {
-    return new Monster(pos.plus(new Vec(0, -1)));
+    return new Monster(pos.plus(new Vec(0, -1), Vec(3, 0)));
   }
 
-  update(time, state) {}
+  update(time, state) {
+    if (!this.alive) return;
 
-  collide(state) {}
+    let newPos = this.pos.plus(this.speed.times(time));
+    if (!state.level.touches(newPos, this.size, "wall")) {
+      // No obstacle blocking the position, so update position
+      return new Monster(newPos, this.speed, this.reset);
+    } else if (this.reset) {
+      // Reset position jumps back when it hits something
+      return new Monster(this.reset, this.speed, this.reset);
+    } else {
+      // Monster inverts its speed to move in the oppose direction
+      return new Monster(this.pos, this.speed.times(-1), this.reset);
+    }
+  }
+
+  collide(state) {
+    let player = state.player;
+    if (player.pos.y + player.size.y < this.pos.y) {
+      // Monster collided with the player
+      return new State(state.level, state.actors, "lost");
+    } else {
+      // Player jumped on the monster
+      if (this.reset) {
+        // Reset the monster
+        this.pos = this.reset;
+      } else {
+        // Kill and remove the monster
+        this.alive = false;
+        let filtered = state.actors.filter((a) => a != this);
+        return new State(state.level, filtered, "playing");
+      }
+    }
+  }
 }
 
 Monster.prototype.size = new Vec(1.2, 2);
