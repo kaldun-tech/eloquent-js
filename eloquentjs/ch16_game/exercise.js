@@ -108,12 +108,11 @@ you want. The class doesn’t have to handle falling, but it should make sure th
 When a monster touches the player, the effect depends on whether the player is jumping on top of them or not.
 You can approximate this by checking whether the player’s bottom is near the monster’s top. If this is the case,
 the monster disappears. If not, the game is lost. Complete the constructor, update, and collide methods.*/
+const monsterSpeed = 4;
+
 class Monster {
-  constructor(pos, speed, reset) {
+  constructor(pos) {
     this.pos = pos;
-    this.speed = speed;
-    this.reset = reset;
-    this.alive = true;
   }
 
   get type() {
@@ -121,41 +120,24 @@ class Monster {
   }
 
   static create(pos) {
-    return new Monster(pos.plus(new Vec(0, -1), new Vec(3, 0)));
+    return new Monster(pos.plus(new Vec(0, -1)));
   }
 
   update(time, state) {
-    if (!this.alive) return;
-
-    let newPos = this.pos.plus(this.speed.times(time));
-    if (!state.level.touches(newPos, this.size, "wall")) {
-      // No obstacle blocking the position, so update position
-      return new Monster(newPos, this.speed, this.reset);
-    } else if (this.reset) {
-      // Reset position jumps back when it hits something
-      return new Monster(this.reset, this.speed, this.reset);
-    } else {
-      // Monster inverts its speed to move in the oppose direction
-      return new Monster(this.pos, this.speed.times(-1), this.reset);
-    }
+    let player = state.player;
+    let speed = (player.pos.x < this.pos.x ? -1 : 1) * time * monsterSpeed;
+    let newPos = new Vec(this.pos.x + speed, this.pos.y);
+    if (state.level.touches(newPos, this.size, "wall")) return this;
+    else return new Monster(newPos);
   }
 
   collide(state) {
     let player = state.player;
-    if (player.pos.y + player.size.y < this.pos.y) {
-      // Monster collided with the player
-      return new State(state.level, state.actors, "lost");
+    if (player.pos.y + player.size.y < this.pos.y + 0.5) {
+      let filtered = state.actors.filter((a) => a != this);
+      return new State(state.level, filtered, state.status);
     } else {
-      // Player jumped on the monster
-      if (this.reset) {
-        // Reset the monster
-        this.pos = this.reset;
-      } else {
-        // Kill and remove the monster
-        this.alive = false;
-        let filtered = state.actors.filter((a) => a != this);
-        return new State(state.level, filtered, "playing");
-      }
+      return new State(state.level, state.actors, "lost");
     }
   }
 }
