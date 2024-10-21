@@ -3,22 +3,19 @@ and subtract one life each time they die. When the player is out of lives, the g
 
 Adjust runGame to implement lives. Have the player start with three.
 Output the current number of lives (using console.log) every time a level starts. */
-let lives = 3;
 async function runGame(plans, Display) {
-  for (let level = 0; level < plans.length; ) {
-    console.log("Begin level ${level + 1} with ${lives} lives");
+  let lives = 3;
+  for (let level = 0; level < plans.length && 0 < lives; ) {
+    console.log(`Level ${level + 1}, lives: ${lives}`);
     let status = await runLevel(new Level(plans[level]), Display);
-    if (status == "won") {
-      level++;
-    } else if (lives == 0) {
-      console.log("Game over! Restarting at level 1...");
-      level = 0;
-      lives = 3;
-    } else {
-      --lives;
-    }
+    if (status == "won") level++;
+    else lives--;
   }
-  console.log("You've won!");
+  if (lives > 0) {
+    console.log("You've won!");
+  } else {
+    console.log("Game over");
+  }
 }
 runGame(GAME_LEVELS, DOMDisplay);
 
@@ -37,66 +34,68 @@ them again when it is finished. */
 /* Do not want keys to take effect once per keypress. The effect
  * should stay active as long as they are held. Set up a key handler
  * that stores the current state of the left right and up arrow keys. */
-function trackKeys(keys) {
-  let down = Object.create(null);
-  let removes = Object.create(null);
-  // Track looks at the event object's type propert to determine whether key state should be updated
-  function track(event) {
-    if (keys.includes(event.key)) {
-      down[event.key] = event.type == "keydown";
-      // Prevent the default action to stop scrolling in the page
-      event.preventDefault();
-    }
-  }
-  function removeTrack(event) {
-    if (keys.includes(event.key)) {
-      delete down[event.key];
-      window.removeEventListener("keydown", track);
-      window.removeEventListener("keyup", track);
-    }
-  }
-  // The same event handler is used for both event types
-  window.addEventListener("keydown", track);
-  window.addEventListener("keyup", track);
-  // Return an object that tracks the current position of these keys and their removeEventListener callback
-  return { down };
-}
-
 function runLevel(level, Display) {
   let display = new Display(document.body, level);
   let state = State.start(level);
   let ending = 1;
-  // Set up tracking for left, right, and up
-  const arrowKeys = trackKeys(["ArrowLeft", "ArrowRight", "ArrowUp"]);
-  function removeArrowKeys() {
-    for (let key in arrowKeys) {
-    }
-  }
-  // Tracking for escape pause/unpause
-  let isPaused = false;
-  function togglePause() {
-    isPaused = !isPaused;
-  }
-  window.addEventListener("keydown", (event) => {
-    if (event.key == "Escape") togglePause(state);
-  });
+  let running = "yes";
+
   return new Promise((resolve) => {
-    runAnimation((time) => {
-      if (isPaused) return false;
+    function escHandler(event) {
+      if (event.key != "Escape") return;
+      event.preventDefault();
+      if (running == "no") {
+        running = "yes";
+        runAnimation(frame);
+      } else if (running == "yes") {
+        running = "pausing";
+      } else {
+        running = "yes";
+      }
+    }
+    window.addEventListener("keydown", escHandler);
+    let arrowKeys = trackKeys(["ArrowLeft", "ArrowRight", "ArrowUp"]);
+
+    function frame(time) {
+      if (running == "pausing") {
+        running = "no";
+        return false;
+      }
+
       state = state.update(time, arrowKeys);
       display.syncState(state);
       if (state.status == "playing") {
         return true;
-      } else if (0 < ending) {
+      } else if (ending > 0) {
         ending -= time;
         return true;
       } else {
         display.clear();
+        window.removeEventListener("keydown", escHandler);
+        arrowKeys.unregister();
         resolve(state.status);
         return false;
       }
-    });
+    }
+    runAnimation(frame);
   });
+}
+
+function trackKeys(keys) {
+  let down = Object.create(null);
+  function track(event) {
+    if (keys.includes(event.key)) {
+      down[event.key] = event.type == "keydown";
+      event.preventDefault();
+    }
+  }
+  window.addEventListener("keydown", track);
+  window.addEventListener("keyup", track);
+  down.unregister = () => {
+    window.removeEventListener("keydown", track);
+    window.removeEventListener("keyup", track);
+  };
+  return down;
 }
 
 /* It is traditional for platform games to have enemies that you can defeat by jumping on top of them.
@@ -122,7 +121,7 @@ class Monster {
   }
 
   static create(pos) {
-    return new Monster(pos.plus(new Vec(0, -1), Vec(3, 0)));
+    return new Monster(pos.plus(new Vec(0, -1), new Vec(3, 0)));
   }
 
   update(time, state) {
