@@ -1,0 +1,170 @@
+<p>Before canvas.</p>
+<canvas width="120" height="60"></canvas>
+<p>After canvas.</p>
+<script>
+  let canvas = document.querySelector("canvas");
+  let context = canvas.getContext("2d");
+  context.fillStyle = "red";
+  context.fillRect(10, 10, 100, 50);
+</script>
+
+<canvas></canvas>
+<script>
+  // No width or height is specified. Default to 300x150.
+  let cx = document.querySelector("canvas").getContext("2d");
+  cx.strokeStyle = "blue";
+  cx.strokeRect(5, 5, 50, 50);
+  cx.lineWidth = 5;
+  cx.strokeRect(135, 5, 50, 50);
+
+  /* Creates a path with a number of horiziontal line segments, then strokes it
+   * Each segment created with lineTo starts at the path's current position
+   * That is usually the end of the last segment unless moveTo was called
+   * In that case the next segment would start at the position passed to moveTo */
+  cx = document.querySelector("canvas").getContext("2d");
+  cx.beginPath();
+  for (let y = 10; y < 100; y += 10) {
+    cx.moveTo(10, y);
+    cx.lineTo(90, y);
+  }
+  cx.stroke();
+
+  /* Draw a filled triangle. Note that only two of the trinagle's sides are drawn.
+   * The third is implied and wouldn't be there if we didn't call fill().
+   * We could also use closePath to explicitly close the path and then use fill or stroke */
+  cx = document.querySelector("canvas").getContext("2d");
+  cx.beginPath();
+  cx.moveTo(50, 10);
+  cx.lineTo(10, 70);
+  cx.lineTo(90, 70);
+  cx.fill();
+
+  /* Draw a quadratic curve from left to right with (60, 10) as the control point.
+   * Then draw two line segments going through that control point and back to the start of the line
+   * The lines leaving the lower corners start off in the direction of the control point then
+   * curve towards their target */
+  cx = document.querySelector("canvas").getContext("2d");
+  cx.beginPath();
+  cx.moveTo(10, 90);
+  // control=(60, 10) goal=(90, 90)
+  cx.quadraticCurveTo(60, 10, 90, 90);
+  cx.lineTo(60, 10);
+  cx.closePath();
+  cx.stroke();
+
+  /* The two control points of a bezier curve specify the direction at both ends of the curve.
+   * The farther they are from their corresponding point, the more the curve will bend */
+  cx = document.querySelector("canvas").getContext("2d");
+  cx.beginPath();
+  cx.moveTo(10, 90);
+  // control1=(10, 10) control2=(90, 10) goal=(50, 90)
+  cx.bezierCurveTo(10, 10, 90, 10, 50, 90);
+  cx.lineTo(90, 10);
+  cx.lineTo(10, 10);
+  cx.closePath();
+  cx.stroke();
+
+  /* Draw a line from the right of the full circle to the right of the quarter-circle */
+  cx = document.querySelector("canvas").getContext("2d");
+  cx.beginPath();
+  // Full circle: center=(50, 50) radius=40 angle=0 to 7
+  cx.arc(50, 50, 40, 0, 7);
+  // Quarter circle: center=(150, 50) radius=40 angle=0 to ½π
+  cx.arc(150, 50, 40, 0, 0.5 * Math.PI);
+  cx.stroke(); // Line between shapes
+
+  // Binding contains an array of objects representing survey responses
+  const results = [
+    {name: "Satisfied", count: 1043, color: "lightblue"},
+    {name: "Neutral", count: 563, color: "lightgreen"},
+    {name: "Unsatisfied", count: 510, color: "pink"},
+    {name: "No comment", count: 175, color: "silver"}
+    ];
+  // Draw a pie chart
+  cx = document.querySelector("canvas").getContext("2d");
+  let total = results
+    .reduce((sum, {count}) => sum + count, 0);
+  // Start at the top
+  let currentAngle = -0.5 * Math.PI;
+  for (let result of results) {
+    let sliceAngle = (result.count / total) * 2 * Math.PI;
+    cx.beginPath();
+    // center=100,100, radius=100
+    // from current angle, clockwise by slice's angle
+    cx.arc(100, 100, 100,
+           currentAngle, currentAngle + sliceAngle);
+    currentAngle += sliceAngle;
+    cx.lineTo(100, 100);
+    cx.fillStyle = result.color;
+    cx.fill();
+  }
+
+  // Draw text
+  cx.font = "28px Georgia";
+  cx.fillStyle = "fuchsia";
+  cx.fillText("I can draw text, too!", 10, 50);
+
+  // Draw image by registering load handler
+  let img = document.createElement("img");
+  img.src = "img/hat.png";
+  img.addEventListener("load", () => {
+    for (let x = 10; x < 200; x += 30) {
+      cx.drawImage(img, x, 10);
+    }
+  });
+
+  /* Sprites are 24 px by 30 px. Load the image, then set up an interval
+   * to draw the next frame in the animation. */
+  img = document.createElement("img");
+  img.src = "img/player.png";
+  let spriteW = 24, spriteH = 30;
+  img.addEventListener("load", () => {
+    // Cycle tracks the position in the animation
+    let cycle = 0;
+    setInterval(() => {
+      cx.clearRect(0, 0, spriteW, spriteH);
+      // Use cycle to compute the x-coordinate of the sprite
+      cx.drawImage(img,
+                   // source rectangle
+                   cycle * spriteW, 0, spriteW, spriteH,
+                   // destination rectangle
+                   0,               0, spriteW, spriteH);
+      // Advance to next frame up to a maximum of 8
+      cycle = (cycle + 1) % 8;
+    }, 120);
+  });
+
+  // Transformation of an arc
+  cx.scale(3, .5);
+  cx.beginPath();
+  cx.arc(50, 50, 40, 0, 7);
+  cx.lineWidth = 3;
+  cx.stroke();
+
+  // Draw a mirrored character at position (100, 0) by flipping the world around the character's vertical center
+  img = document.createElement("img");
+  img.src = "img/player.png";
+  spriteW = 24, spriteH = 30;
+  img.addEventListener("load", () => {
+    flipHorizontally(cx, 100 + spriteW / 2);
+    cx.drawImage(img, 0, 0, spriteW, spriteH,
+                 100, 0, spriteW, spriteH);
+  });
+
+  /* This draws a treelike shape by drawing a line, moving the center of the coordinate system to the end of the line,
+   * then calling itself twice: first rotated to the left, then rotated to the right.
+   * Every call reduces the length of the branch drawn, then recursion stops when the length drops below 8. */
+   function branch(length, angle, scale) {
+    cx.fillRect(0, 0, 1, length);
+    if (length < 8) return;
+    cx.save();
+    cx.translate(0, length);
+    cx.rotate(-angle);
+    branch(length * scale, angle, scale);
+    cx.rotate(2 * angle);
+    branch(length * scale, angle, scale);
+    cx.restore();
+  }
+  cx.translate(300, 0);
+  branch(60, 0.5, 0.8);
+</script>
