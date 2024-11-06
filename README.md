@@ -1,2 +1,2 @@
-# js-playground
+# eloquent-js
 Learning JS https://eloquentjavascript.net
