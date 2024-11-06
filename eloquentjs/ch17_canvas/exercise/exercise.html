@@ -1,81 +1,65 @@
 <canvas width="600" height="200"></canvas>
 <script>
   let cx = document.querySelector("canvas").getContext("2d");
-  cx.lineWidth = 5;
+  function trapezoid(x, y) {
+    cx.beginPath();
+    cx.moveTo(x, y);
+    cx.lineTo(x + 50, y);
+    cx.lineTo(x + 70, y + 50);
+    cx.lineTo(x - 20, y + 50);
+    cx.closePath();
+    cx.stroke();
+  }
+  trapezoid(30, 30);
 
-  // Draw shapes: Trapezoid
-  cx.beginPath();
-  cx.moveTo(30, 10);
-  cx.lineTo(70, 10);
-  cx.lineTo(100, 40);
-  cx.lineTo(10, 40);
-  cx.lineTo(30, 10);
-  cx.stroke();
+  function diamond(x, y) {
+    cx.translate(x + 30, y + 30);
+    cx.rotate(Math.PI / 4);
+    cx.fillStyle = "red";
+    cx.fillRect(-30, -30, 60, 60);
+    cx.resetTransform();
+  }
+  diamond(140, 30);
 
-  // Red diamond
-  cx.beginPath();
-  cx.fillStyle = "red";
-  cx.moveTo(40, 10);
-  cx.lineTo(60, 30);
-  cx.lineTo(40, 50);
-  cx.lineTo(20, 30);
-  cx.fill();
-
-  // With translate
-  cx.beginPath();
-
-  cx.fill();
-
-  // Zigzag line
-  cx.beginPath();
-  let x = 10, y = 10, xInc = 50, yInc = 10;
-  cx.moveTo(x, y);
-  for (let i = 0; i < 12; ++i) {
-    // Move back and forth
-    if (i % 2 === 0) {
-        x += xInc;
-    } else {
-        x -= xInc;
+  function zigzag(x, y) {
+    cx.beginPath();
+    cx.moveTo(x, y);
+    for (let i = 0; i < 8; i++) {
+      cx.lineTo(x + 80, y + i * 8 + 4);
+      cx.lineTo(x, y + i * 8 + 8);
     }
-    // Move down
-    y += yInc;
-    // Draw next segment
-    cd.lineTo(x, y);
+    cx.stroke();
   }
-  cx.stroke();
+  zigzag(240, 20);
 
-  // Spiral made up of 100 straight line segments
-  cx.beginPath();
-  x = y = 50;
-  cx.moveTo(x, y);
-  for (let i = 0; i < 100; ++i) {
-    let angle = Math.PI * i / 25;
-    let radius = i + 2;
-    x += Math.cos(angle) * radius;
-    y += Math.sin(angle) * radius;
-    cx.lineTo(x, y);
+  function spiral(x, y) {
+    let radius = 50, xCenter = x + radius, yCenter = y + radius;
+    cx.beginPath();
+    cx.moveTo(xCenter, yCenter);
+    for (let i = 0; i < 300; i++) {
+      let angle = i * Math.PI / 30;
+      let dist = radius * i / 300;
+      cx.lineTo(xCenter + Math.cos(angle) * dist,
+                yCenter + Math.sin(angle) * dist);
+    }
+    cx.stroke();
   }
-  cx.stroke();
+  spiral(340, 20);
 
-  // A yellow star
-  cx.beginPath();
-  cx.fillStyle = "yellow";
-  radius = 20;
-  // Top of star
-  x = 50;
-  y = 10;
-  cx.moveTo(x, y);
-  // Center control point
-  let cx = x;
-  let cy = y + radius;
-  // Draw 8 curves around the star
-  for (let i = 0; i < 8; ++i) {
-    let angle = Math.PI * i / 4;
-    x += radius * Math.cos(2 * Math.PI * i / 8);
-    y += radius * Math.sin(2 * Math.PI * i / 8);
-    cx.quadraticCurveTo(cx, cy, x, y);
+  function star(x, y) {
+    let radius = 50, xCenter = x + radius, yCenter = y + radius;
+    cx.beginPath();
+    cx.moveTo(xCenter + radius, yCenter);
+    for (let i = 1; i <= 8; i++) {
+      let angle = i * Math.PI / 4;
+      cx.quadraticCurveTo(xCenter, yCenter,
+                          xCenter + Math.cos(angle) * radius,
+                          yCenter + Math.sin(angle) * radius);
+    }
+    cx.fillStyle = "gold";
+    cx.fill();
   }
-  cx.fill();
+  star(440, 20);
 
 </script>
 
