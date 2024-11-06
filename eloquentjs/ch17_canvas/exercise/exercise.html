@@ -89,7 +89,7 @@
     {name: "Unsatisfied", count: 510, color: "pink"},
     {name: "No comment", count: 175, color: "silver"}
   ];
-let cx = document.querySelector("canvas").getContext("2d");
+  let cx = document.querySelector("canvas").getContext("2d");
   let total = results
     .reduce((sum, {count}) => sum + count, 0);
   let currentAngle = -0.5 * Math.PI;
@@ -145,30 +145,30 @@ let cx = document.querySelector("canvas").getContext("2d");
         }
     }
 
-    let topOfBall = Vec(100, 200);
-    let velocity = Vec(15, 10);
+    let topOfBall = new Vec(100, 200);
+    let velocity = new Vec(30, 20);
     const radius = 5;
 
   function updateAnimation(step) {
     // Draw a bouncing ball that moves at constant speed and bounces off the box's sides
-    cx.clearRect(0, 0, width, height);
+    cx.clearRect(0, 0, cx.width, cx.height);
     // Compute the current position
     topOfBall = topOfBall.plus(velocity.times(step));
 
     // Reverse direction when the ball hits the sides of the box
-    if (canvas.width <= topOfBall.x + radius || topOfBall.x - radius <= 0) {
+    if (cx.width <= topOfBall.x + radius || topOfBall.x - radius <= 0) {
       velocity.x = -velocity.x;
     }
     // Bottom and top
-    if (canvas.height <= topOfBall.y + radius || topOfBall.y - radius <= 0) {
+    if (cx.height <= topOfBall.y + radius || topOfBall.y - radius <= 0) {
       velocity.y = -velocity.y;
     }
 
     // Draw the background
-    strokeRect(0, 0, cx.canvas.width, cx.canvas.height);
+    cx.strokeRect(0, 0, cx.canvas.width, cx.canvas.height);
     // Move the ball
     cx.beginPath();
-    cx.arc(topOfBallX, topOfBallY, radius, 0, 2 * Math.PI);
+    cx.arc(topOfBall.x, topOfBall.y, radius, 0, 2 * Math.PI);
     cx.fillStyle = "red";
     cx.fill();
   }

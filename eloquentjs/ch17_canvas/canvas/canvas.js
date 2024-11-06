@@ -77,7 +77,7 @@ CanvasDisplay.prototype.clearDisplay = function (status) {
 };
 
 /* Draw the background by running through visible tiles using the same trick in the previous touches method
- * otherSprites contains the pictures used for eleents other than the player: wall, lava, and coin */
+ * otherSprites contains the pictures used for elements other than the player: wall, lava, and coin */
 let otherSprites = document.createElement("img");
 otherSprites.src = "img/sprites.png";
 
