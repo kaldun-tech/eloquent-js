@@ -130,46 +130,25 @@
   }
   requestAnimationFrame(frame);
 
-    // A 2D vector for the position and size of actors
-    class Vec {
-        constructor(x, y) {
-            this.x = x;
-            this.y = y;
-        }
-        plus(other) {
-            return new Vec(this.x + other.x, this.y + other.y);
-        }
-        // Scales the vector by the given factor
-        times(factor) {
-            return new Vec(this.x * factor, this.y * factor);
-        }
-    }
-
-    let topOfBall = new Vec(100, 200);
-    let velocity = new Vec(30, 20);
-    const radius = 5;
+  let x = 100, y = 300;
+  let radius = 10;
+  let speedX = 100, speedY = 60;
 
   function updateAnimation(step) {
     // Draw a bouncing ball that moves at constant speed and bounces off the box's sides
-    cx.clearRect(0, 0, cx.width, cx.height);
-    // Compute the current position
-    topOfBall = topOfBall.plus(velocity.times(step));
+    cx.clearRect(0, 0, 400, 400);
+    cx.strokeStyle = "blue";
+    cx.lineWidth = 4;
+    cx.strokeRect(25, 25, 350, 350);
 
     // Reverse direction when the ball hits the sides of the box
-    if (cx.width <= topOfBall.x + radius || topOfBall.x - radius <= 0) {
-      velocity.x = -velocity.x;
-    }
-    // Bottom and top
-    if (cx.height <= topOfBall.y + radius || topOfBall.y - radius <= 0) {
-      velocity.y = -velocity.y;
-    }
-
-    // Draw the background
-    cx.strokeRect(0, 0, cx.canvas.width, cx.canvas.height);
-    // Move the ball
-    cx.beginPath();
-    cx.arc(topOfBall.x, topOfBall.y, radius, 0, 2 * Math.PI);
+    x += step * speedX;
+    y += step * speedY;
+    if (x < 25 + radius || 375 - radius < x) speedX = -speedX;
+    if (y < 25 + radius || 375 - radius < y) speedY = -speedY;
     cx.fillStyle = "red";
+    cx.beginPath();
+    cx.arc(x, y, radius, 0, 7);
     cx.fill();
   }
 </script>
