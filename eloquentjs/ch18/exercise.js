@@ -24,6 +24,23 @@ negotiate("text/html");
 negotiate("application/json");
 negotiate("application/rainbows+unicorns");
 
+// Async solution
+const url = "https://eloquentjavascript.net/author";
+const types = [
+  "text/plain",
+  "text/html",
+  "application/json",
+  "application/rainbows+unicorns",
+];
+
+async function showTypes() {
+  for (let type of types) {
+    let resp = await fetch(url, { headers: { accept: type } });
+    console.log(`${type}: ${await resp.text()}\n`);
+  }
+}
+showTypes();
+
 /*
 Build an interface that allows users to type and run pieces of JavaScript code.
 
@@ -34,17 +51,14 @@ to a string and display it below the text field.
 function callWrappedText() {
   let codeTextArea = document.getElementById("code");
   let outputPre = document.getElementById("output");
-  let codeText = codeTextArea.value;
-  let outputText = "";
 
   try {
-    var builtFunction = new Function(codeText);
+    var builtFunction = new Function(codeTextArea.value);
     // Alernative option: eval(codeText);
-    outputText = builtFunction();
+    outputPre.innerText = String(builtFunction());
   } catch (err) {
-    outputText = "Error: " + err;
+    outputPre.innerText = "Error: " + err;
   }
-  outputPre.textContent = outputText + "\n";
 }
 let button = document.getElementById("button");
 button.addEventListener("click", () => callWrappedText());
@@ -123,7 +137,7 @@ class Grid {
         const cell = row.insertCell(-1);
         cell.appendChild(checkbox);
         // Set checkbox if alive
-        checkbox.checked = this.grid[i * this.cols + j].isAlive;
+        checkbox.checked = this.cells[i * this.cols + j].isAlive;
       }
     }
   }
@@ -172,11 +186,11 @@ class Grid {
     return neighbors;
   }
 
-  runTurn(index) {
+  nextCellState(index) {
     // Compute the number of neighbors alive
     let cell = this.cells[index];
     const neighbors = this.findNeighbors(index);
-    const aliveNeighbors = neighbors.filter((cell) => cell.isAlive).length;
+    const aliveNeighbors = neighbors.filter((n) => n.isAlive).length;
     // Live cells with 2 or 3 neighbors stay alive. Dead cells stay dead.
     let isAlive = cell.isAlive;
     if (cell.isAlive && (aliveNeighbors < 2 || 3 < aliveNeighbors)) {
@@ -192,9 +206,7 @@ class Grid {
   runTurn() {
     let newCells = [];
     for (let i = 0; i < this.rows * this.cols; ++i) {
-      for (let j = 0; j < this.cols; ++j) {
-        newCells.push(this.runTurn(row, col));
-      }
+      newCells.push(this.nextCellState(i));
     }
     this.cells = newCells;
     this.buildGrid();
