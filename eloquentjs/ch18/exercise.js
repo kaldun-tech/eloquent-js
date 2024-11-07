@@ -66,17 +66,13 @@ grid with a random pattern initially. Display it as a grid of checkbox fields, w
 advance to the next generation. When the user checks or unchecks the checkboxes, their changes should be included
 when computing the next generation.
 */
+const gridContainer = document.getElementById("grid");
+const tableId = "grid-table";
+
+// A cell is alive or dead
 class Cell {
-  // A cell is alive or dead and references a div element
-  constructor(alive, divElem) {
+  constructor(alive) {
     this.isAlive = alive;
-    this.divElem = divElem;
-  }
-  kill() {
-    this.isAlive = false;
-  }
-  birth() {
-    this.isAlive = true;
   }
 }
 
@@ -85,104 +81,123 @@ class Grid {
   constructor(rows, cols) {
     this.rows = rows;
     this.cols = cols;
-    this.cells = new Cell[rows][cols]();
+    this.cells = [];
+    this.randomizeCells();
     this.buildGrid();
   }
 
-  setElemBackground(cellElem, alive) {
-    cellElem.style.background = alive ? "white" : "black";
+  randomizeCells() {
+    for (let i = 0; i < this.rows * this.cols; ++i) {
+      // Randomize alive or dead state
+      let alive = Math.random() < 0.5;
+      // Add cell
+      this.cells.push(new Cell(alive));
+    }
+  }
+
+  readGrid() {
+    for (i = 0; i < this.rows * this.cols; ++i) {
+      let row = i / this.rows;
+      let col = i % this.cols;
+    }
   }
 
   buildGrid() {
-    let gridElement = document.getElementById("grid");
+    // Remove the existing table if needed
+    let table = document.getElementById(tableId);
+    if (table) table.remove();
+
+    // Build the table
+    table = document.createElement("table");
+    table.id = tableId;
+    gridContainer.appendChild(table);
+
+    // Build entries
     for (let i = 0; i < this.rows; ++i) {
+      // Append a row to the table
+      const row = table.insertRow(-1);
       for (let j = 0; j < this.cols; ++j) {
-        // Create cell
-        const cellElem = document.createElement("div");
-        cellElem.style.width = cellElem.style.height = "20px";
-        // Randomize alive or dead state
-        let alive = Math.random() < 0.5;
-        setElemBackground(cellElem, alive);
-        // Add to cells
-        this.cells[i][j] = new Cell(alive, cellElem);
-        gridElement.appendChild(cellElem);
+        // Insert cell as a checkbox
+        const checkbox = document.createElement("input");
+        checkbox.type = "checkbox";
+        const cell = row.insertCell(-1);
+        cell.appendChild(checkbox);
+        // Set checkbox if alive
+        checkbox.checked = this.grid[i * this.cols + j].isAlive;
       }
     }
   }
 
-  updateGrid() {
-    let gridElement = document.getElementById("grid");
-    for (let i = 0; i < this.rows * this.cols; ++i) {
-      let row = i / this.rows;
-      let col = i % this.cols;
-      let cellElem = gridElement.children[i];
-      let alive = this.grid[row][col].isAlive;
-      this.setElemBackground(cellElem, alive);
-    }
-  }
-
-  findNeighbors(row, col) {
-    if (row < 0 || col < 0 || this.rows <= row || this.cols <= col) {
+  findNeighbors(index) {
+    if (index < 0 || this.rows * this.cols <= index) {
       console.log("Index out of bounds");
       return;
     }
+    const row = Math.floor(index / this.cols);
+    const col = index % this.cols;
     let neighbors = [];
     if (0 < row) {
       // Row above
-      neighbors.push(this.cells[row - 1], col);
+      const top = index - this.cols;
+      neighbors.push(this.cells[top]);
       if (0 < col) {
-        // Top left
-        neighbors.push(this.cells[row - 1][col - 1]);
+        const topLeft = top - 1;
+        neighbors.push(this.cells[topLeft]);
       }
       if (col + 1 < this.cols) {
-        // Top right
-        neighbors.push(this.cells[row - 1][col + 1]);
+        const topRight = top + 1;
+        neighbors.push(this.cells[topRight]);
       }
     }
     if (0 < col) {
-      // Column left
-      neighbors.push(this.cells[row][col - 1]);
+      const left = index - 1;
+      neighbors.push(this.cells[left]);
     }
     if (col + 1 < this.cols) {
-      // Column right
-      neighbors.push(this.cells[row][col + 1]);
+      const right = col + 1;
+      neighbors.push(this.cells[right]);
     }
     if (row + 1 < this.rows) {
-      // Row below
-      neighbors.push(this.cells[row + 1], col);
+      const lower = index + this.cols;
+      neighbors.push(this.cells[lower]);
       if (0 < col) {
-        // Bottom left
-        neighbors.push(this.cells[row + 1][col - 1]);
+        const lowerLeft = lower - 1;
+        neighbors.push(this.cells[lowerLeft]);
       }
       if (col + 1 < this.cols) {
-        // Bottom right
-        neighbors.push(this.cells[row + 1][col + 1]);
+        const lowerRight = lower + 1;
+        neighbors.push(this.cells[lowerRight]);
       }
     }
     return neighbors;
   }
 
-  applyRules(row, col) {
+  runTurn(index) {
     // Compute the number of neighbors alive
-    let cell = this.cells[row][col];
-    const neighbors = this.findNeighbors(row, col);
+    let cell = this.cells[index];
+    const neighbors = this.findNeighbors(index);
     const aliveNeighbors = neighbors.filter((cell) => cell.isAlive).length;
-    // Live cells die with fewer than 2 or more than 3 neighbors
+    // Live cells with 2 or 3 neighbors stay alive. Dead cells stay dead.
+    let isAlive = cell.isAlive;
     if (cell.isAlive && (aliveNeighbors < 2 || 3 < aliveNeighbors)) {
-      cell.kill();
+      // Live cells die with fewer than 2 or more than 3 neighbors
+      isAlive = false;
     } else if (!cell.isAlive && aliveNeighbors == 3) {
       // Dead cells with exactly three neighbors are born
-      cell.birth();
-    } // Live cells with 2 or 3 neighbors stay alive. Dead cells stay dead.
+      isAlive = true;
+    }
+    return new Cell(isAlive);
   }
 
   runTurn() {
-    for (let i = 0; i < this.rows; ++i) {
+    let newCells = [];
+    for (let i = 0; i < this.rows * this.cols; ++i) {
       for (let j = 0; j < this.cols; ++j) {
-        this.applyRules(row, col);
+        newCells.push(this.runTurn(row, col));
       }
     }
-    this.updateGrid();
+    this.cells = newCells;
+    this.buildGrid();
   }
 }
 let grid = new Grid(10, 10);
