@@ -1,0 +1,230 @@
+<form method="GET" action="example/message.html">
+    <p>Name: <input type="text" name="name"></p>
+    <p>Message:<br><textarea name="message"></textarea></p>
+    <p><button type="submit">Send</button></p>
+</form>
+
+<p><input type="text" value="abc"> (text)</p>
+<p><input type="password" value="abc"> (password)</p>
+<p><input type="checkbox" checked> (checkbox)</p>
+<p><input type="color" value="orange"> (color)</p>
+<p><input type="date" value="2023-10-13"> (date)</p>
+<p><input type="radio" value="A" name="choice">
+   <input type="radio" value="B" name="choice" checked>
+   <input type="radio" value="C" name="choice"> (radio)</p>
+<p><input type="file"> (file)</p>
+
+<textarea>
+    one
+    two
+    three
+</textarea>
+
+<select>
+    <option>Pancakes</option>
+    <option>Pudding</option>
+    <option>Ice cream</option>
+</select>
+
+<input type="text">
+<script>
+  // Set and remove focus
+  document.querySelector("input").focus();
+  console.log(document.activeElement.tagName);
+  // → INPUT
+  document.querySelector("input").blur();
+  console.log(document.activeElement.tagName);
+  // → BODY
+</script>
+
+<input type="text" tabindex=1> <a href=".">(help)</a>
+<button onclick="console.log('ok')" tabindex=2>OK</button>
+
+<button>I'm all right</button>
+<button disabled>I'm out</button>
+
+<form action="example/submit.html">
+    Name: <input type="text" name="name"><br>
+    Password: <input type="password" name="password"><br>
+    <button type="submit">Log in</button>
+</form>
+<script>
+    // The name attribute can be used as a property name when accessing the form's elements property
+    let form = document.querySelector("form");
+    console.log(form.elements[1].type);
+    // → password
+    console.log(form.elements.password.type);
+    // → password
+    console.log(form.elements.name.form == form);
+    // → true
+</script>
+
+<form>
+    Value: <input type="text" name="value">
+    <button type="submit">Save</button>
+</form>
+<script>
+    // Handle the submit event and prevent the default behavior using preventDefault
+    let form = document.querySelector("form");
+    form.addEventListener("submit", event => {
+      console.log("Saving value", form.elements.value.value);
+      event.preventDefault();
+    });
+</script>
+
+<textarea></textarea>
+<script>
+  let textarea = document.querySelector("textarea");
+  textarea.addEventListener("keydown", event => {
+    // When we press F2, insert the string Khasekhemwy (last pharaoh of the second dynasty)
+    if (event.key == "F2") {
+      replaceSelection(textarea, "Khasekhemwy");
+      event.preventDefault();
+    }
+  });
+  function replaceSelection(field, word) {
+    let from = field.selectionStart, to = field.selectionEnd;
+    field.value = field.value.slice(0, from) + word +
+                  field.value.slice(to);
+    // Put the cursor after the word
+    field.selectionStart = from + word.length;
+    field.selectionEnd = from + word.length;
+  }
+</script>
+
+<input type="text"> length: <span id="length">0</span>
+<script>
+  // Show a text field and a counter displaying the current length of the text in the field
+  let text = document.querySelector("input");
+  let output = document.querySelector("#length");
+  text.addEventListener("input", () => {
+    output.textContent = text.value.length;
+  });
+</script>
+
+<label>
+    <input type="checkbox" id="purple"> Make this page purple
+</label>
+<script>
+    let checkbox = document.querySelector("#purple");
+    checkbox.addEventListener("change", () => {
+      document.body.style.background =
+        checkbox.checked ? "mediumpurple" : "";
+    });
+</script>
+
+Color:
+<label>
+  <input type="radio" name="color" value="orange"> Orange
+</label>
+<label>
+  <input type="radio" name="color" value="lightgreen"> Green
+</label>
+<label>
+  <input type="radio" name="color" value="lightblue"> Blue
+</label>
+<script>
+  // Square brackets in the CSS query are used to match attributes
+  let buttons = document.querySelectorAll("[name=color]");
+  for (let button of Array.from(buttons)) {
+    button.addEventListener("change", () => {
+      document.body.style.background = button.value;
+    });
+  }
+</script>
+
+<select multiple>
+    <option value="1">0001</option>
+    <option value="2">0010</option>
+    <option value="4">0100</option>
+    <option value="8">1000</option>
+</select> = <span id="output">0</span>
+<script>
+    // Extracts the selected values from a multiple select field
+    let select = document.querySelector("select");
+    let output = document.querySelector("#output");
+    select.addEventListener("change", () => {
+      // Compose a binary number from individual bits. Hold CTRL to select multiple options.
+      let number = 0;
+      for (let option of Array.from(select.options)) {
+        if (option.selected) {
+          number += Number(option.value);
+        }
+      }
+      output.textContent = number;
+    });
+</script>
+
+<input type="file">
+<script>
+  let input = document.querySelector("input");
+  input.addEventListener("change", () => {
+    if (input.files.length > 0) {
+      let file = input.files[0];
+      console.log("You chose", file.name);
+      if (file.type) console.log("It has type", file.type);
+    }
+  });
+</script>
+
+<input type="file" multiple>
+<script>
+  let input = document.querySelector("input");
+  input.addEventListener("change", () => {
+    for (let file of Array.from(input.files)) {
+      let reader = new FileReader();
+      reader.addEventListener("load", () => {
+        console.log("File", file.name, "starts with",
+                    reader.result.slice(0, 20));
+      });
+      reader.readAsText(file);
+    }
+  });
+</script>
+
+Notes: <select></select> <button>Add</button><br>
+<textarea style="width: 100%"></textarea>
+
+<script>
+  let list = document.querySelector("select");
+  let note = document.querySelector("textarea");
+
+  let state;
+  function setState(newState) {
+    list.textContent = "";
+    for (let name of Object.keys(newState.notes)) {
+      let option = document.createElement("option");
+      option.textContent = name;
+      if (newState.selected == name) option.selected = true;
+      list.appendChild(option);
+    }
+    note.value = newState.notes[newState.selected];
+
+    localStorage.setItem("Notes", JSON.stringify(newState));
+    state = newState;
+  }
+  // Get the starting value from the "Notes" value stored in localStorage, or create an example with a shopping list
+  setState(JSON.parse(localStorage.getItem("Notes")) ?? {
+    notes: {"shopping list": "Carrots\nRaisins"},
+    selected: "shopping list"
+  });
+
+  list.addEventListener("change", () => {
+    setState({notes: state.notes, selected: list.value});
+  });
+  note.addEventListener("change", () => {
+    let {selected} = state;
+    setState({
+      notes: {...state.notes, [selected]: note.value},
+      selected
+    });
+  });
+  document.querySelector("button")
+    .addEventListener("click", () => {
+      let name = prompt("Note name");
+      if (name) setState({
+        notes: {...state.notes, [name]: ""},
+        selected: name
+      });
+    });
+</script>
