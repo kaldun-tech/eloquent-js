@@ -170,23 +170,55 @@ To do this, since the pixels can be an arbitrary distance apart, you’ll have t
 A line between two pixels is a connected chain of pixels, as straight as possible, going from the start to the end.
 Diagonally adjacent pixels count as connected. A slanted line should look like the picture on the left, not the picture on the right.
 
-[Diagram of two pixelated lines, one light, skipping across pixels diagonally, and one heavy, with all pixels connected horizontally or vertically]
-
 Finally, if we have code that draws a line between two arbitrary points, we might as well use it to also define a line tool,
 which draws a straight line between the start and end of a drag.
 */
-// The old draw tool. Rewrite this.
-function draw(pos, state, dispatch) {
-  function drawPixel({ x, y }, state) {
-    let drawn = { x, y, color: state.color };
-    dispatch({ picture: state.picture.draw([drawn]) });
+// Rewrite the draw tool using "stroke rendering" or "gesture recognition".
+let points = [];
+let isDrawing = false;
+
+function handleMouseDown(event) {
+  isDrawing = true;
+  points = [{ x: event.clientX, y: event.clientY }];
+}
+
+function handleMouseMove(event) {
+  if (isDrawing) {
+    points.push({ x: event.clientX, y: event.clientY });
   }
-  drawPixel(pos, state);
-  return drawPixel;
+}
+
+function handleMouseUp() {
+  isDrawing = false;
+  draw(points, state, dispatch);
+}
+
+function fitLine(points) {
+  // Implement the line-fitting algorithm linear interpolation here
+  let line = [];
+  for (let i = 0; i < points.length - 1; i++) {
+    let p1 = points[i];
+    let p2 = points[i + 1];
+    let dx = p2.x - p1.x;
+    let dy = p2.y - p1.y;
+    let steps = Math.max(Math.abs(dx), Math.abs(dy));
+    for (let j = 0; j <= steps; j++) {
+      let t = j / steps;
+      let x = p1.x + t * dx;
+      let y = p1.y + t * dy;
+      line.push({ x, y });
+    }
+  }
+  return line;
+}
+
+function draw(pos, state, dispatch) {
+  let line = fitLine(points);
+  dispatch({ picture: state.picture.draw(line, state.color) });
 }
 
 function line(pos, state, dispatch) {
-  // Your code here
+  draw(pos, state, dispatch);
 }
 
 let dom = startPixelEditor({
