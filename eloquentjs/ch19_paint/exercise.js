@@ -29,7 +29,33 @@ class PixelEditor {
       elt("br"),
       ...this.controls.reduce((a, c) => a.concat(" ", c.dom), [])
     );
+
+    // Extend the constructor to add keyboard shortcuts
+    this.keyboardShortcuts = {
+      s: () => this.save(),
+      o: () => this.startLoad(dispatch),
+      z: () => this.undo(),
+      t: () => this.toolSelect(),
+      c: () => this.colorSelect(),
+      d: () => this.draw(),
+      r: () => this.rectangle(),
+      f: () => this.fill(),
+      p: () => this.pick(),
+    };
+
+    document.addEventListener("keydown", (e) =>
+      this.handleKeyDown(e, this.keyboardShortcuts)
+    );
   }
+
+  handleKeyDown(event) {
+    const key = `${event.ctrlKey ? "Ctrl+" : ""}${event.key}`;
+    if (this.keyboardShortcuts[key]) {
+      event.preventDefault();
+      this.keyboardShortcuts[key]();
+    }
+  }
+
   syncState(state) {
     this.state = state;
     this.canvas.syncState(state.picture);
@@ -50,25 +76,36 @@ Find a way to make the syncState method of PictureCanvas faster by redrawing onl
 Remember that drawPicture is also used by the save button, so if you change it, either make sure the changes don’t
 break the old use or create a new version with a different name.
 
-Also note that changing the size of a <canvas> element, by setting its width or height properties, clears it, making it entirely transparent again.
+Also note that changing the size of a <canvas> element, by setting its width or height properties, clears it,
+making it entirely transparent again.
 */
 // Change this method
 PictureCanvas.prototype.syncState = function (picture) {
-  if (this.picture == picture) return;
+  if (this.picture === picture) return;
+  let previous = this.picture;
   this.picture = picture;
-  drawPicture(this.picture, this.dom, scale);
+  drawPicture(this.picture, this.dom, scale, previous);
 };
 
-// You may want to use or change this as well
-function drawPicture(picture, canvas, scale) {
-  canvas.width = picture.width * scale;
-  canvas.height = picture.height * scale;
-  let cx = canvas.getContext("2d");
+function drawPicture(picture, canvas, scale, previousPicture = null) {
+  // Set the size of the canvas based on the picture's size only once
+  if (
+    !previousPicture ||
+    picture.width != canvas.width / scale ||
+    picture.height != canvas.height / scale
+  ) {
+    canvas.width = picture.width * scale;
+    canvas.height = picture.height * scale;
+  }
 
+  let cx = canvas.getContext("2d");
   for (let y = 0; y < picture.height; y++) {
     for (let x = 0; x < picture.width; x++) {
-      cx.fillStyle = picture.pixel(x, y);
-      cx.fillRect(x * scale, y * scale, scale, scale);
+      // Only redraw pixels that have changed
+      if (cx.fillStyle != picture.pixel(x, y)) {
+        cx.fillStyle = picture.pixel(x, y);
+        cx.fillRect(x * scale, y * scale, scale, scale);
+      }
     }
   }
 }
@@ -79,8 +116,38 @@ document.querySelector("div").appendChild(startPixelEditor({}));
 Define a tool called circle that draws a filled circle when you drag. The center of the circle lies at the point where the drag
 or touch gesture starts, and its radius is determined by the distance dragged.
 */
-function circle(pos, state, dispatch) {
-  // Your code here
+function circle(start, state, dispatch) {
+  function drawCircle(pos) {
+    let radius = Math.sqrt((pos.x - start.x) ** 2 + (pos.y - start.y) ** 2);
+    let drawn = [];
+    // Compute the maximum number of points to draw
+    let numPoints = Math.max(state.picture.width, state.picture.height);
+    let thetaStep = (2 * Math.PI) / numPoints;
+    // Draw the circle
+    for (let theta = 0; theta < 2 * Math.PI; theta += thetaStep) {
+      let x = start.x + radius * Math.cos(theta);
+      let y = start.y + radius * Math.sin(theta);
+      if (
+        x < 0 ||
+        x > state.picture.width ||
+        y < 0 ||
+        y > state.picture.height
+      ) {
+        continue;
+      }
+      if (
+        drawn.length === 0 ||
+        x !== drawn[drawn.length - 1].x ||
+        y !== drawn[drawn.length - 1].y
+      ) {
+        drawn.push({ x, y, color: state.color });
+      }
+    }
+    dispatch({ picture: state.picture.draw(drawn) });
+  }
+
+  drawCircle(start);
+  return drawCircle;
 }
 
 let dom = startPixelEditor({

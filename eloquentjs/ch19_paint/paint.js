@@ -25,7 +25,8 @@ function updateState(state, action) {
   return { ...state, ...action };
 }
 
-// Expanded version of the elt function avoids the verbose DOM methods
+/* Expanded version of the elt function avoids the verbose DOM methods. Creates a new DOM
+ * element with the given type, properties, and children. */
 function elt(type, props, ...children) {
   let dom = document.createElement(type);
   if (props) Object.assign(dom, props);
@@ -351,7 +352,7 @@ function pictureFromImage(image) {
 // Store the history of changes
 function historyUpdateState(state, action) {
   if (action.undo == true) {
-    // Undo action: take the msot recent picture from history and make that the current picture
+    // Undo action: take the most recent picture from history and make that the current picture
     if (state.done.length == 0) return state;
     return {
       ...state,
