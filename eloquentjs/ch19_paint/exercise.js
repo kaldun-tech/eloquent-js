@@ -24,39 +24,33 @@ class PixelEditor {
     this.controls = controls.map((Control) => new Control(state, config));
     this.dom = elt(
       "div",
-      {},
+      {
+        // tabIndex allows the wrapping div to receive keyboard focus. Then add the event handler for keyDown
+        tabIndex: 0,
+        onkeydown: (event) => this.keyDown(event, config),
+      },
       this.canvas.dom,
       elt("br"),
       ...this.controls.reduce((a, c) => a.concat(" ", c.dom), [])
     );
-
-    // Extend the constructor to add keyboard shortcuts
-    this.keyboardShortcuts = {
-      s: () => this.save(),
-      o: () => this.startLoad(dispatch),
-      z: () => this.undo(),
-      t: () => this.toolSelect(),
-      c: () => this.colorSelect(),
-      d: () => this.draw(),
-      r: () => this.rectangle(),
-      f: () => this.fill(),
-      p: () => this.pick(),
-    };
-
-    document.addEventListener("keydown", (e) =>
-      this.handleKeyDown(e, this.keyboardShortcuts)
-    );
   }
 
-  handleKeyDown(event) {
-    if (event.ctrlKey) {
-      if (this.keyboardShortcuts[event.key]) {
-        event.preventDefault();
-        this.keyboardShortcuts[event.key]();
+  keyDown(event, config) {
+    if (event.key == "z" && (event.ctrlKey || event.metaKey)) {
+      // Undo
+      event.preventDefault();
+      config.dispatch({ undo: true });
+    } else if (!event.ctrlKey && !event.metaKey && !event.altKey) {
+      // Look up the tool in the config tools keys
+      for (let tool of Object.keys(config.tools)) {
+        if (tool[0] == event.key) {
+          event.preventDefault();
+          config.dispatch({ tool });
+          return;
+        }
       }
     }
   }
-
   syncState(state) {
     this.state = state;
     this.canvas.syncState(state.picture);
@@ -82,29 +76,30 @@ making it entirely transparent again.
 */
 // Change this method
 PictureCanvas.prototype.syncState = function (picture) {
-  if (this.picture === picture) return;
-  let previous = this.picture;
+  if (this.picture == picture) return;
+  drawPicture(picture, this.dom, scale, this.picture);
   this.picture = picture;
-  drawPicture(this.picture, this.dom, scale, previous);
 };
 
-function drawPicture(picture, canvas, scale, previousPicture = null) {
-  // Set the size of the canvas based on the picture's size only once
+function drawPicture(picture, canvas, scale, previous) {
   if (
-    !previousPicture ||
-    picture.width != canvas.width / scale ||
-    picture.height != canvas.height / scale
+    previous == null ||
+    previous.width != picture.width ||
+    previous.height != picture.height
   ) {
+    // Clear the canvas
     canvas.width = picture.width * scale;
     canvas.height = picture.height * scale;
+    previous = null;
   }
 
   let cx = canvas.getContext("2d");
   for (let y = 0; y < picture.height; y++) {
     for (let x = 0; x < picture.width; x++) {
-      // Only redraw pixels that have changed
-      if (cx.fillStyle != picture.pixel(x, y)) {
-        cx.fillStyle = picture.pixel(x, y);
+      // Redraw only the pixels that have changed
+      let color = picture.pixel(x, y);
+      if (previous == null || previous.pixel(x, y) != color) {
+        cx.fillStyle = color;
         cx.fillRect(x * scale, y * scale, scale, scale);
       }
     }
