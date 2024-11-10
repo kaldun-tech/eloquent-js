@@ -49,10 +49,11 @@ class PixelEditor {
   }
 
   handleKeyDown(event) {
-    const key = `${event.ctrlKey ? "Ctrl+" : ""}${event.key}`;
-    if (this.keyboardShortcuts[key]) {
-      event.preventDefault();
-      this.keyboardShortcuts[key]();
+    if (event.ctrlKey) {
+      if (this.keyboardShortcuts[event.key]) {
+        event.preventDefault();
+        this.keyboardShortcuts[event.key]();
+      }
     }
   }
 
@@ -174,23 +175,44 @@ Finally, if we have code that draws a line between two arbitrary points, we migh
 which draws a straight line between the start and end of a drag.
 */
 // Rewrite the draw tool using "stroke rendering" or "gesture recognition".
-let points = [];
-let isDrawing = false;
+const initialState = {
+  points: [],
+  isDrawing: false,
+  // other state properties...
+};
+
+const reducer = (state = initialState, action) => {
+  switch (action.type) {
+    case "START_DRAWING":
+      return {
+        ...state,
+        isDrawing: true,
+        points: [{ x: action.x, y: action.y }],
+      };
+    case "ADD_POINT":
+      return {
+        ...state,
+        points: [...state.points, { x: action.x, y: action.y }],
+      };
+    case "STOP_DRAWING":
+      return { ...state, isDrawing: false };
+    default:
+      return state;
+  }
+};
 
 function handleMouseDown(event) {
-  isDrawing = true;
-  points = [{ x: event.clientX, y: event.clientY }];
+  dispatch({ type: "START_DRAWING", x: event.clientX, y: event.clientY });
 }
 
 function handleMouseMove(event) {
-  if (isDrawing) {
-    points.push({ x: event.clientX, y: event.clientY });
+  if (state.isDrawing) {
+    dispatch({ type: "ADD_POINT", x: event.clientX, y: event.clientY });
   }
 }
 
 function handleMouseUp() {
-  isDrawing = false;
-  draw(points, state, dispatch);
+  dispatch({ type: "STOP_DRAWING" });
 }
 
 function fitLine(points) {
