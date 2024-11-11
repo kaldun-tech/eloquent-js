@@ -112,37 +112,30 @@ document.querySelector("div").appendChild(startPixelEditor({}));
 Define a tool called circle that draws a filled circle when you drag. The center of the circle lies at the point where the drag
 or touch gesture starts, and its radius is determined by the distance dragged.
 */
-function circle(start, state, dispatch) {
-  function drawCircle(pos) {
-    let radius = Math.sqrt((pos.x - start.x) ** 2 + (pos.y - start.y) ** 2);
+function circle(pos, state, dispatch) {
+  function drawCircle(to) {
+    let radius = Math.sqrt((to.x - pos.x) ** 2 + (to.y - pos.y) ** 2);
+    let radiusC = Math.ceil(radius);
     let drawn = [];
-    // Compute the maximum number of points to draw
-    let numPoints = Math.max(state.picture.width, state.picture.height);
-    let thetaStep = (2 * Math.PI) / numPoints;
-    // Draw the circle
-    for (let theta = 0; theta < 2 * Math.PI; theta += thetaStep) {
-      let x = start.x + radius * Math.cos(theta);
-      let y = start.y + radius * Math.sin(theta);
-      if (
-        x < 0 ||
-        x > state.picture.width ||
-        y < 0 ||
-        y > state.picture.height
-      ) {
-        continue;
-      }
-      if (
-        drawn.length === 0 ||
-        x !== drawn[drawn.length - 1].x ||
-        y !== drawn[drawn.length - 1].y
-      ) {
+    for (let dy = -radiusC; dy <= radiusC; dy++) {
+      for (let dx = -radiusC; dx <= radiusC; dx++) {
+        let dist = Math.sqrt(dx ** 2 + dy ** 2);
+        if (dist > radius) continue;
+        let y = pos.y + dy,
+          x = pos.x + dx;
+        if (
+          y < 0 ||
+          y >= state.picture.height ||
+          x < 0 ||
+          x >= state.picture.width
+        )
+          continue;
         drawn.push({ x, y, color: state.color });
       }
     }
     dispatch({ picture: state.picture.draw(drawn) });
   }
-
-  drawCircle(start);
+  drawCircle(pos);
   return drawCircle;
 }
 
@@ -170,72 +163,41 @@ Finally, if we have code that draws a line between two arbitrary points, we migh
 which draws a straight line between the start and end of a drag.
 */
 // Rewrite the draw tool using "stroke rendering" or "gesture recognition".
-const initialState = {
-  points: [],
-  isDrawing: false,
-  // other state properties...
-};
-
-const reducer = (state = initialState, action) => {
-  switch (action.type) {
-    case "START_DRAWING":
-      return {
-        ...state,
-        isDrawing: true,
-        points: [{ x: action.x, y: action.y }],
-      };
-    case "ADD_POINT":
-      return {
-        ...state,
-        points: [...state.points, { x: action.x, y: action.y }],
-      };
-    case "STOP_DRAWING":
-      return { ...state, isDrawing: false };
-    default:
-      return state;
-  }
-};
-
-function handleMouseDown(event) {
-  dispatch({ type: "START_DRAWING", x: event.clientX, y: event.clientY });
-}
-
-function handleMouseMove(event) {
-  if (state.isDrawing) {
-    dispatch({ type: "ADD_POINT", x: event.clientX, y: event.clientY });
-  }
-}
-
-function handleMouseUp() {
-  dispatch({ type: "STOP_DRAWING" });
-}
-
-function fitLine(points) {
-  // Implement the line-fitting algorithm linear interpolation here
-  let line = [];
-  for (let i = 0; i < points.length - 1; i++) {
-    let p1 = points[i];
-    let p2 = points[i + 1];
-    let dx = p2.x - p1.x;
-    let dy = p2.y - p1.y;
-    let steps = Math.max(Math.abs(dx), Math.abs(dy));
-    for (let j = 0; j <= steps; j++) {
-      let t = j / steps;
-      let x = p1.x + t * dx;
-      let y = p1.y + t * dy;
-      line.push({ x, y });
+function drawLine(from, to, color) {
+  let points = [];
+  if (Math.abs(from.y - to.y) < Math.abs(from.x - to.x)) {
+    if (to.x < from.x) [from, to] = [to, from];
+    let slope = (to.y - from.y) / (to.x - from.x);
+    for (let { x, y } = from; x <= to.x; x++) {
+      points.push({ x, y: Math.round(y), color });
+      y += slope;
+    }
+  } else {
+    if (to.y < from.y) [from, to] = [to, from];
+    let slope = (to.x - from.x) / (to.y - from.y);
+    for (let { x, y } = from; y <= to.y; y++) {
+      points.push({ x: Math.round(x), y, color });
+      x += slope;
     }
   }
-  return line;
+  return points;
 }
 
 function draw(pos, state, dispatch) {
-  let line = fitLine(points);
-  dispatch({ picture: state.picture.draw(line, state.color) });
+  function connect(newPos, state) {
+    let line = drawLine(pos, newPos, state.color);
+    pos = newPos;
+    dispatch({ picture: state.picture.draw(line) });
+  }
+  connect(pos, state);
+  return connect;
 }
 
 function line(pos, state, dispatch) {
-  draw(pos, state, dispatch);
+  return (end) => {
+    let line = drawLine(pos, end, state.color);
+    dispatch({ picture: state.picture.draw(line) });
+  };
 }
 
 let dom = startPixelEditor({
