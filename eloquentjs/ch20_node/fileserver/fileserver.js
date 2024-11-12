@@ -113,40 +113,22 @@ Use asynchronous or synchronous filesystem functions as you see fit. Setting thi
 actions are requested at the same time might speed things up a little, but not a huge amount, since most filesystems can
 read only one thing at a time. */
 
-// Returns array of files with content matching regex in a directory
-function findFilesMatchingRegexInDirectory(directory, regex) {
-  let files = [];
-  for (let file of fs.readdirSync(directory)) {
-    let path = directory + "/" + file;
-    if (fs.statSync(path).isDirectory()) {
-      // Recursive call on subdirectory
-      files.push(...findFilesMatchingRegexInDirectory(path, regex));
-    } else if (
-      fs.statSync(path).isFile() &&
-      doesFileContentsMatchRegex(file, regex)
-    ) {
-      files.push(path);
+import { statSync, readdirSync, readFileSync } from "node:fs";
+
+let searchTerm = new RegExp(process.argv[2]);
+
+for (let arg of process.argv.slice(3)) {
+  search(arg);
+}
+
+function search(file) {
+  let stats = statSync(file);
+  if (stats.isDirectory()) {
+    for (let f of readdirSync(file)) {
+      search(file + "/" + f);
     }
-  }
-  return files;
-}
-
-// Returns true if file contents matches regex
-function doesFileContentsMatchRegex(file, regex) {
-  return fs.readFileSync(file, "utf8").match(regex);
-}
-
-let regex = process.argv[2];
-let fileArgs = process.argv.slice(3);
-let matchingFiles = [];
-for (let nextFile of fileArgs) {
-  if (fs.statSync(nextFile).isDirectory()) {
-    matchingFiles.push(...findFilesMatchingRegexInDirectory(nextFile, regex));
-  } else if (
-    fs.statSync(nextFile).isFile() &&
-    doesFileContentsMatchRegex(nextFile, regex)
-  ) {
-    matchingFiles.push(nextFile);
+  } else if (searchTerm.test(readFileSync(file, "utf8"))) {
+    console.log(file);
   }
 }
 
@@ -160,25 +142,23 @@ which specifies a set of conventions on top of HTTP that make it suitable for cr
 
 import { mkdir } from "node:fs/promises";
 
-async function createDirectory(path) {
-  await mkdir(path);
-}
-
 // Asynchronous version of the MKCOL method to make a collection
 methods.MKCOL = async function (request) {
   let path = urlPath(request.url);
   let stats;
   try {
     stats = await stat(path);
-    // If the file exists and is a directory return 204 no content
-    if (stats.isDirectory()) return { status: 204 };
-    // If the file exists and is not a directory throw a 400 bad request
-    else if (stats.isFile()) return { status: 400 };
   } catch (error) {
+    // Throw unexpected error
+    if (error.code != "ENOENT") throw error;
     // Create the directory
-    createDirectory(path);
+    await mkdir(path);
     return { status: 200 };
   }
+  // If the file exists and is a directory return 204 no content
+  if (stats.isDirectory()) return { status: 204 };
+  // If the file exists and is not a directory throw a 400 bad request
+  else return { status: 400, body: "Not a directory" };
 };
 
 /* 3. A Web Server
