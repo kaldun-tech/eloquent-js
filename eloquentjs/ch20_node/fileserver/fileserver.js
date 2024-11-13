@@ -1,6 +1,7 @@
 import { createServer } from "node:http";
 
 const methods = Object.create(null);
+const port = 8080;
 
 createServer((request, response) => {
   let handler = methods[request.method] || notAllowed;
@@ -14,7 +15,9 @@ createServer((request, response) => {
       if (body?.pipe) body.pipe(response);
       else response.end(body);
     });
-}).listen(8000);
+}).listen(port, () => {
+  console.log(`Listening on http://localhost:${port}`);
+});
 
 async function notAllowed(request) {
   return {
@@ -37,13 +40,18 @@ function urlPath(url) {
   return path;
 }
 
-import { createReadStream } from "node:fs";
+import { createReadStream, readFile } from "node:fs";
 import { stat, readdir } from "node:fs/promises";
 import { lookup } from "mime-types";
 
 // Return a list of files when reading a directory. Return the file's content for a regular file.
 methods.GET = async function (request) {
-  let path = urlPath(request.url);
+  const path = urlPath(request.url);
+  if (path === "/") {
+    const content = await readFile("index.html", "utf8");
+    return { body: content, type: "text/html" };
+  }
+
   let stats;
   try {
     // Look up information about a file to find if it exists and is a directory

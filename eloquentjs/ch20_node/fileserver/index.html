@@ -1,0 +1,62 @@
+<body>
+    <div>
+        <form id="file-form">
+            <label for="file-input">Select File:</label>
+            <select id="file-select" name="file">
+                <!-- options will be populated dynamically with file names -->
+            </select>
+          
+            <label for="file-content">File Content:</label>
+            <textarea id="file-content" name="content"></textarea>
+          
+            <button id="save-button" type="submit">Save</button>
+          </form>
+    </div>
+    <script>
+      const fileContent = document.getElementById("file-content");
+      const fileSelect = document.getElementById("file-select");
+      const saveButton = document.getElementById("save-button");
+
+      // Populate the file select with file names
+      fetch("/files")
+        .then(response => response.json())
+        .then(files => {
+          files.forEach(file => {
+            const option = document.createElement("option");
+            option.value = file;
+            option.textContent = file;
+            fileSelect.appendChild(option);
+          });
+        });
+
+      // Handle file selection by updating the file content
+      fileSelect.addEventListener("change", async () => {
+        const file = fileSelect.value;
+        if (file) {
+            const response = await fetch(file);
+            const content = await response.text();
+
+            const fileContent = document.getElementById("file-content");
+            fileContent.value = content;
+        }
+      });
+
+      saveButton.addEventListener("click", async () => {
+        const file = fileSelect.value;
+        const content = fileContent.value;
+
+        if (file && content) {
+            const response = await fetch(file, {
+                method: "PUT",
+                body: content,
+                headers: { "Content-Type": "text/plain" },
+            });
+            if (response.ok) {
+                console.log("File saved successfully!");
+            } else {
+                console.error("Error saving file:", response.status);
+            }
+        }
+      });
+    </script>
+</body>
